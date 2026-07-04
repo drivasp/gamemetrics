@@ -1,0 +1,16 @@
+{
+  "schemaName": "fact_user_events",
+  "dimensionFieldSpecs": [
+    {"name": "event_id", "dataType": "STRING"},
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "event_type", "dataType": "STRING"},
+    {"name": "product_id", "dataType": "STRING"},
+    {"name": "metadata_json", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["event_id"]
+}

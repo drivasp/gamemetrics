@@ -1,0 +1,18 @@
+{
+  "schemaName": "emp_records",
+  "dimensionFieldSpecs": [
+    {"name": "record_id",  "dataType": "STRING"},
+    {"name": "collection", "dataType": "STRING"},
+    {"name": "data_json",  "dataType": "STRING"},
+    {"name": "deleted",    "dataType": "BOOLEAN"}
+  ],
+  "dateTimeFieldSpecs": [
+    {
+      "name": "created_at",
+      "dataType": "LONG",
+      "format": "1:MILLISECONDS:EPOCH",
+      "granularity": "1:MILLISECONDS"
+    }
+  ],
+  "primaryKeyColumns": ["record_id"]
+}

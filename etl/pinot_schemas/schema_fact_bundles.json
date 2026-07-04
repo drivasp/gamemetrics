@@ -1,0 +1,14 @@
+{
+  "schemaName": "fact_bundles",
+  "dimensionFieldSpecs": [
+    {"name": "bundle_id",   "dataType": "STRING"},
+    {"name": "slug",        "dataType": "STRING"},
+    {"name": "name",        "dataType": "STRING"},
+    {"name": "description", "dataType": "STRING"},
+    {"name": "active",      "dataType": "BOOLEAN"},
+    {"name": "semana",      "dataType": "INT"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "discount_pct", "dataType": "DOUBLE"}
+  ]
+}

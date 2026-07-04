@@ -1,0 +1,24 @@
+{
+  "schemaName": "fact_gifts",
+  "dimensionFieldSpecs": [
+    {"name": "gift_id", "dataType": "STRING"},
+    {"name": "sender_id", "dataType": "STRING"},
+    {"name": "recipient_id", "dataType": "STRING"},
+    {"name": "recipient_email", "dataType": "STRING"},
+    {"name": "product_id", "dataType": "STRING"},
+    {"name": "game_slug", "dataType": "STRING"},
+    {"name": "game_name", "dataType": "STRING"},
+    {"name": "game_image", "dataType": "STRING"},
+    {"name": "purchase_id", "dataType": "STRING"},
+    {"name": "message", "dataType": "STRING"},
+    {"name": "status", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "amount", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["gift_id"]
+}

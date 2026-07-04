@@ -1,0 +1,10 @@
+{
+  "schemaName": "dim_esrb",
+  "dimensionFieldSpecs": [
+    {"name": "dim_id",     "dataType": "INT"},
+    {"name": "codigo",     "dataType": "STRING"},
+    {"name": "nombre",     "dataType": "STRING"},
+    {"name": "edad_minima","dataType": "INT"}
+  ],
+  "metricFieldSpecs": []
+}

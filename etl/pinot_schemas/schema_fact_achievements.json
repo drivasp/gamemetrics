@@ -1,0 +1,18 @@
+{
+  "schemaName": "fact_achievements",
+  "dimensionFieldSpecs": [
+    {"name": "achievement_id", "dataType": "STRING"},
+    {"name": "product_id", "dataType": "STRING"},
+    {"name": "name", "dataType": "STRING"},
+    {"name": "description", "dataType": "STRING"},
+    {"name": "icon_url", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "points", "dataType": "INT"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["achievement_id"]
+}

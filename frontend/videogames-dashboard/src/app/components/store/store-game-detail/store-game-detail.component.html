@@ -1,0 +1,273 @@
+<div class="detail-page">
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-full">
+    <div class="spinner"></div>
+    <p>Cargando juego...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error && !loading" class="error-state">
+    <span>😕</span>
+    <p>No se encontró el juego.</p>
+    <button class="btn-back" (click)="goBack()">← Volver al catálogo</button>
+  </div>
+
+  <ng-container *ngIf="!loading && game">
+
+    <!-- ── Hero ── -->
+    <div class="hero" [style.background-image]="heroStyle">
+      <div class="hero-gradient"></div>
+      <div class="hero-nav">
+        <button class="breadcrumb" (click)="goToStore()">Store</button>
+        <span class="breadcrumb-sep">›</span>
+        <button class="breadcrumb" (click)="goBack()">Catálogo</button>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb current">{{ game.name }}</span>
+      </div>
+    </div>
+
+    <!-- ── Main content ── -->
+    <div class="main-content">
+
+      <!-- Left 70% -->
+      <div class="content-left">
+
+        <!-- Gallery -->
+        <div class="gallery-main" *ngIf="activeScreenshot || game.trailer_url">
+          <video
+            *ngIf="showTrailer && game.trailer_url"
+            class="gallery-video"
+            [src]="game.trailer_url"
+            autoplay muted loop playsinline controls>
+          </video>
+          <img *ngIf="!showTrailer && activeScreenshot" [src]="activeScreenshot" [alt]="game.name">
+        </div>
+        <div class="gallery-placeholder" *ngIf="!activeScreenshot">🎮</div>
+
+        <div class="gallery-strip" *ngIf="game.screenshots.length > 0 || game.trailer_url">
+          <button
+            *ngIf="game.trailer_url"
+            class="thumb-btn trailer"
+            [class.active]="showTrailer"
+            (click)="showTrailer = true">
+            ▶ Trailer
+          </button>
+          <img
+            *ngFor="let s of game.screenshots"
+            [src]="s" [alt]="game.name"
+            [class.active]="!showTrailer && s === activeScreenshot"
+            (click)="setScreenshot(s)"
+            loading="lazy">
+        </div>
+
+        <!-- Description -->
+        <div class="description" *ngIf="shortDescription">
+          <h3>Acerca del juego</h3>
+          <p>{{ shortDescription }}</p>
+        </div>
+
+        <!-- Info row -->
+        <div class="info-grid">
+          <div class="info-item" *ngIf="displayGenres">
+            <span class="info-key">Géneros</span>
+            <span class="info-val">{{ displayGenres }}</span>
+          </div>
+          <div class="info-item" *ngIf="displayPlatforms">
+            <span class="info-key">Plataformas</span>
+            <span class="info-val">{{ displayPlatforms }}</span>
+          </div>
+          <div class="info-item" *ngIf="game.developers">
+            <span class="info-key">Desarrollador</span>
+            <span class="info-val">{{ game.developers.split('||')[0] }}</span>
+          </div>
+          <div class="info-item" *ngIf="game.publishers">
+            <span class="info-key">Publicador</span>
+            <span class="info-val">{{ game.publishers.split('||')[0] }}</span>
+          </div>
+          <div class="info-item" *ngIf="game.released">
+            <span class="info-key">Lanzamiento</span>
+            <span class="info-val">{{ game.released }}</span>
+          </div>
+        </div>
+
+        <!-- Rating bars -->
+        <div class="rating-bars">
+          <div class="bar-row">
+            <span class="bar-label">Rating</span>
+            <div class="bar-track">
+              <div class="bar-fill rating-fill" [style.width]="ratingPct + '%'"></div>
+            </div>
+            <span class="bar-value">{{ game.rating.toFixed(1) }} / 5</span>
+          </div>
+          <div class="bar-row" *ngIf="game.metacritic > 0">
+            <span class="bar-label">Metacritic</span>
+            <div class="bar-track">
+              <div class="bar-fill meta-fill" [style.width]="metacriticPct + '%'"></div>
+            </div>
+            <span class="bar-value">{{ game.metacritic }} / 100</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right 30% — purchase panel -->
+      <div class="content-right">
+
+        <div class="game-cover">
+          <img *ngIf="game.background_image" [src]="game.background_image" [alt]="game.name">
+          <div *ngIf="!game.background_image" class="cover-placeholder">🎮</div>
+        </div>
+
+        <h2 class="game-title-side">{{ game.name }}</h2>
+
+        <div class="price-block">
+          <span class="discount-badge" *ngIf="game.discount_pct && game.discount_pct > 0">-{{ game.discount_pct }}%</span>
+          <span class="price-original" *ngIf="originalPriceLabel">{{ originalPriceLabel }}</span>
+          <span class="price-tag" [class.free]="game.is_free">{{ priceLabel }}</span>
+        </div>
+
+        <div class="side-actions" *ngIf="owned">
+          <button class="btn-owned" (click)="goLibrary()">✓ En tu biblioteca — Jugar</button>
+        </div>
+
+        <div class="side-actions" *ngIf="!owned">
+          <button
+            class="btn-cart"
+            [class.in-cart]="inCart"
+            [disabled]="cartLoading || inCart"
+            (click)="inCart ? goCart() : addToCart()">
+            {{ inCart ? '🛒 Ver carrito' : (cartLoading ? 'Agregando...' : 'Añadir al carro') }}
+          </button>
+          <button
+            class="btn-wishlist"
+            [class.in-wishlist]="inWishlist"
+            [disabled]="wishlistLoading"
+            (click)="toggleWishlist()">
+            {{ inWishlist ? '♥ En tu wishlist' : '♡ Agregar a Wishlist' }}
+          </button>
+          <button class="btn-gift" (click)="showGiftForm = !showGiftForm">🎁 Comprar como regalo</button>
+        </div>
+
+        <div class="gift-panel" *ngIf="showGiftForm && !owned">
+          <h4>Enviar como regalo</h4>
+          <input type="email" [(ngModel)]="giftEmail" placeholder="Correo del destinatario">
+          <textarea [(ngModel)]="giftMessage" rows="2" placeholder="Mensaje (opcional)"></textarea>
+          <button class="btn-gift-send" [disabled]="giftLoading" (click)="sendGift()">
+            {{ giftLoading ? 'Enviando...' : 'Pagar con cartera y enviar' }}
+          </button>
+          <p class="ok" *ngIf="giftMsg">{{ giftMsg }}</p>
+          <p class="err" *ngIf="giftErr">{{ giftErr }}</p>
+        </div>
+
+        <div class="alert-panel" *ngIf="!owned">
+          <h4>Alerta de precio</h4>
+          <div class="alert-row">
+            <span>Avisarme bajo</span>
+            <input type="number" [(ngModel)]="alertPrice" min="0.5" step="0.5">
+            <button [disabled]="alertLoading" (click)="setPriceAlert()">Crear</button>
+          </div>
+          <p class="ok" *ngIf="alertMsg">{{ alertMsg }}</p>
+        </div>
+
+        <div class="side-meta" *ngIf="game.esrb_rating">
+          <span class="meta-key">Clasificación ESRB</span>
+          <span class="esrb-badge">{{ game.esrb_rating }}</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Reseñas de usuarios ── -->
+    <section class="reviews-section" *ngIf="reviews">
+      <h2>Reseñas de la comunidad</h2>
+      <div class="reviews-summary" *ngIf="reviews.total > 0">
+        <span class="avg">{{ reviews.avg_rating }}</span>
+        <span>{{ reviews.total }} reseña(s) de compradores verificados</span>
+      </div>
+
+      <div class="review-form" *ngIf="owned">
+        <h3>Escribe tu reseña</h3>
+        <div class="stars">
+          <label>Valoración</label>
+          <select [(ngModel)]="reviewRating">
+            <option [ngValue]="5">5 - Excelente</option>
+            <option [ngValue]="4">4 - Muy bueno</option>
+            <option [ngValue]="3">3 - Bueno</option>
+            <option [ngValue]="2">2 - Regular</option>
+            <option [ngValue]="1">1 - Malo</option>
+          </select>
+        </div>
+        <textarea [(ngModel)]="reviewComment" rows="4" placeholder="¿Qué te pareció el juego?"></textarea>
+        <button class="btn-review" [disabled]="reviewSubmitting" (click)="submitReview()">
+          {{ reviewSubmitting ? 'Guardando...' : (myReview ? 'Actualizar reseña' : 'Publicar reseña') }}
+        </button>
+        <p class="review-err" *ngIf="reviewError">{{ reviewError }}</p>
+      </div>
+
+      <div class="review-list">
+        <article class="review-card" *ngFor="let r of reviews.reviews">
+          <div class="review-head">
+            <span class="stars-display">{{ '★'.repeat(r.rating) }}</span>
+            <span class="date">{{ r.created_at }}</span>
+          </div>
+          <p>{{ r.comment }}</p>
+          <div class="vote-row">
+            <span>¿Te resultó útil?</span>
+            <button
+              [class.active]="r.my_vote === true"
+              (click)="voteReview(r, true)">👍 {{ r.helpful_count || 0 }}</button>
+            <button
+              [class.active]="r.my_vote === false"
+              (click)="voteReview(r, false)">👎 {{ r.not_helpful_count || 0 }}</button>
+          </div>
+        </article>
+        <p *ngIf="reviews.reviews.length === 0" class="no-reviews">Aún no hay reseñas. ¡Sé el primero en comprar y opinar!</p>
+      </div>
+    </section>
+
+    <!-- ── Foro de la comunidad ── -->
+    <section class="forum-section">
+      <h2>Discusiones de la comunidad</h2>
+
+      <div class="forum-create" *ngIf="auth.isLoggedIn()">
+        <input [(ngModel)]="forumTitle" placeholder="Título del hilo">
+        <textarea [(ngModel)]="forumBody" rows="3" placeholder="Escribe el primer mensaje..."></textarea>
+        <button (click)="createThread()" [disabled]="forumBusy">{{ forumBusy ? 'Publicando...' : 'Crear discusión' }}</button>
+        <p class="ok" *ngIf="forumMsg">{{ forumMsg }}</p>
+        <p class="err" *ngIf="forumErr">{{ forumErr }}</p>
+      </div>
+      <p class="forum-login" *ngIf="!auth.isLoggedIn()">Inicia sesión para participar en el foro.</p>
+
+      <article class="thread" *ngFor="let t of forumThreads" (click)="openThread(t)">
+        <h3>{{ t.title }}</h3>
+        <p>por {{ t.author_name }}</p>
+      </article>
+      <p class="empty" *ngIf="!forumThreads.length">Sé el primero en abrir una discusión.</p>
+
+      <div class="thread-view" *ngIf="activeThread">
+        <header>
+          <h3>{{ activeThread.thread.title }}</h3>
+          <button class="close" (click)="activeThread = null">✕</button>
+        </header>
+        <div class="post" *ngFor="let p of activeThread.posts">
+          <strong>{{ p.author_name }}</strong>
+          <p>{{ p.body }}</p>
+        </div>
+        <div class="reply" *ngIf="auth.isLoggedIn()">
+          <textarea [(ngModel)]="replyBody" rows="2" placeholder="Escribe una respuesta..."></textarea>
+          <button (click)="replyThread()" [disabled]="forumBusy">Responder</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Juegos que te pueden gustar ── -->
+    <section class="similar-section" *ngIf="game.similar.length > 0">
+      <h2>Juegos que te pueden gustar</h2>
+      <div class="similar-grid">
+        <app-game-card *ngFor="let g of game.similar" [game]="g"></app-game-card>
+      </div>
+    </section>
+
+  </ng-container>
+</div>

@@ -1,0 +1,330 @@
+<div class="dash-wrapper">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-title">
+      <span class="page-icon">🎮</span>
+      <div>
+        <h1>GameMetrics S.A.</h1>
+        <p class="page-subtitle">Plataforma de análisis de videojuegos</p>
+      </div>
+    </div>
+    <div class="tab-nav">
+      <button class="tab-btn" [class.active]="activeTab === 'etl'" (click)="setTab('etl')">
+        <span class="tab-icon">⚙️</span> Panel ETL
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'analytics'" (click)="setTab('analytics')">
+        <span class="tab-icon">📊</span> Analytics
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- TAB: Panel ETL                                     -->
+  <!-- ══════════════════════════════════════════════════ -->
+  @if (activeTab === 'etl') {
+  <div class="etl-layout">
+
+    <div class="steps-col">
+      <p class="col-label">Pipeline de datos</p>
+
+      <!-- Step 1 -->
+      <div class="step-card" [class.running]="etlStatus.dataset.status === 'running'" [class.ok]="etlStatus.dataset.status === 'ok'" [class.error]="etlStatus.dataset.status === 'error'">
+        <div class="step-number">01</div>
+        <div class="step-body">
+          <div class="step-head">
+            <span class="step-name">Dataset Principal</span>
+            <span class="step-badge" [ngClass]="etlStatus.dataset.status">{{ getStatusLabel(etlStatus.dataset.status) }}</span>
+          </div>
+          <p class="step-desc">Carga los juegos desde el Parquet a Apache Pinot. Elige cuántas semanas quieres cargar.</p>
+          @if (etlStatus.dataset.mensaje) {
+            <p class="step-msg">{{ etlStatus.dataset.mensaje }}</p>
+          }
+          <div class="etl-semanas-selector">
+            <span class="etl-semanas-label">Seleccionar semana:</span>
+            <div class="etl-semanas-pills">
+              @for (s of semanasETLList; track s) {
+                <button class="etl-sem-pill"
+                  [class.active]="selectedSemanaETL === s"
+                  [class.loaded]="semanaYaCargada(s)"
+                  [disabled]="etlStatus.dataset.status === 'running'"
+                  (click)="setSelectedSemanaETL(s)">{{ s }}</button>
+              }
+            </div>
+            <span class="etl-semanas-info">
+              {{ semanaYaCargada(selectedSemanaETL) ? '✓ Semana ' + selectedSemanaETL + ' ya cargada' : 'Semana ' + selectedSemanaETL + ' no cargada' }}
+            </span>
+          </div>
+
+          @if (confirmSemana !== null) {
+            <div class="etl-confirm-box">
+              <span class="etl-confirm-msg">⚠ La semana {{ confirmSemana }} ya está en Pinot. ¿Reemplazarla con datos nuevos?</span>
+              <div class="etl-confirm-actions">
+                <button class="step-btn step-btn--danger" (click)="confirmarReemplazar()">Sí, reemplazar</button>
+                <button class="step-btn step-btn--cancel" (click)="cancelarConfirmacion()">Cancelar</button>
+              </div>
+            </div>
+          }
+
+          <div class="step-meta">
+            <span class="step-target">Parquet → Apache Pinot (semana {{ selectedSemanaETL }})</span>
+            <button class="step-btn" [disabled]="etlStatus.dataset.status === 'running'" (click)="reloadDataset()">
+              {{ etlStatus.dataset.status === 'running' ? 'Ejecutando...' : '▶ Cargar Semana ' + selectedSemanaETL }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-connector"></div>
+
+      <!-- Step 2 -->
+      <div class="step-card" [class.running]="etlStatus.empresa.status === 'running'" [class.ok]="etlStatus.empresa.status === 'ok'" [class.error]="etlStatus.empresa.status === 'error'">
+        <div class="step-number">02</div>
+        <div class="step-body">
+          <div class="step-head">
+            <span class="step-name">Tablas Empresa</span>
+            <span class="step-badge" [ngClass]="etlStatus.empresa.status">{{ getStatusLabel(etlStatus.empresa.status) }}</span>
+          </div>
+          <p class="step-desc">Envía las 10 tablas del modelo empresarial a Kafka → Apache Pinot.</p>
+          @if (etlStatus.empresa.mensaje) {
+            <p class="step-msg">{{ etlStatus.empresa.mensaje }}</p>
+          }
+          <div class="step-meta">
+            <span class="step-target">Dataset → Kafka → Pinot (10 tablas)</span>
+            <button class="step-btn" [disabled]="etlStatus.empresa.status === 'running'" (click)="reloadEmpresa()">
+              {{ etlStatus.empresa.status === 'running' ? 'Ejecutando...' : '▶ Recargar Empresa' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-connector"></div>
+
+      <!-- Step 3 -->
+      <div class="step-card" [class.running]="etlStatus.dimensiones.status === 'running'" [class.ok]="etlStatus.dimensiones.status === 'ok'" [class.error]="etlStatus.dimensiones.status === 'error'">
+        <div class="step-number">03</div>
+        <div class="step-body">
+          <div class="step-head">
+            <span class="step-name">Tablas Dimensión</span>
+            <span class="step-badge" [ngClass]="etlStatus.dimensiones.status">{{ getStatusLabel(etlStatus.dimensiones.status) }}</span>
+          </div>
+          <p class="step-desc">Genera las 5 tablas de dimensión: plataformas, géneros, desarrolladores, publicadores y ESRB.</p>
+          @if (etlStatus.dimensiones.mensaje) {
+            <p class="step-msg">{{ etlStatus.dimensiones.mensaje }}</p>
+          }
+          <div class="step-meta">
+            <span class="step-target">Parquet → Pinot (5 dimensiones)</span>
+            <button class="step-btn" [disabled]="etlStatus.dimensiones.status === 'running'" (click)="reloadDimensions()">
+              {{ etlStatus.dimensiones.status === 'running' ? 'Ejecutando...' : '▶ Crear Dimensiones' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-connector"></div>
+
+      <div class="step-card" [class.running]="etlStatus.realtime?.status === 'running'">
+        <div class="step-number">04</div>
+        <div class="step-body">
+          <div class="step-head">
+            <span class="step-name">Comercio REALTIME (Fase 1)</span>
+            <span class="step-badge" [ngClass]="etlStatus.realtime?.status || 'idle'">{{ getStatusLabel(etlStatus.realtime?.status || 'idle') }}</span>
+          </div>
+          <p class="step-desc">Carrito, órdenes, pagos, biblioteca, reseñas y promociones en Pinot.</p>
+          <button class="step-btn" [disabled]="etlStatus.realtime?.status === 'running'" (click)="createRealtimeTables()">▶ Crear tablas comercio</button>
+        </div>
+      </div>
+
+      <div class="step-connector"></div>
+
+      <div class="step-card" [class.running]="etlStatus.catalogo?.status === 'running'">
+        <div class="step-number">05</div>
+        <div class="step-body">
+          <div class="step-head">
+            <span class="step-name">Catálogo comercial OFFLINE</span>
+            <span class="step-badge" [ngClass]="etlStatus.catalogo?.status || 'idle'">{{ getStatusLabel(etlStatus.catalogo?.status || 'idle') }}</span>
+          </div>
+          <p class="step-desc">Productos vendibles, precios por región y bundles.</p>
+          <button class="step-btn" [disabled]="etlStatus.catalogo?.status === 'running'" (click)="reloadCatalogo()">▶ Cargar catálogo</button>
+        </div>
+      </div>
+
+      <div class="step-connector"></div>
+
+      <div class="step-card" [class.running]="etlStatus.promociones?.status === 'running'">
+        <div class="step-number">06</div>
+        <div class="step-body">
+          <div class="step-head">
+            <span class="step-name">Promociones Steam Sale</span>
+            <span class="step-badge" [ngClass]="etlStatus.promociones?.status || 'idle'">{{ getStatusLabel(etlStatus.promociones?.status || 'idle') }}</span>
+          </div>
+          <p class="step-desc">Descuentos weekend vía Kafka → fact_promotions.</p>
+          <button class="step-btn" [disabled]="etlStatus.promociones?.status === 'running'" (click)="seedPromociones()">▶ Seed promociones</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log column -->
+    <div class="log-col">
+      <div class="log-header">
+        <span class="col-label">Log de Ejecución</span>
+        <button class="log-clear-btn" (click)="clearLog()">Limpiar</button>
+      </div>
+      <div class="log-terminal">
+        @for (line of etlLog; track $index) {
+          <div class="log-line"
+            [class.log-ok]="line.includes('✓')"
+            [class.log-err]="line.includes('✗')"
+            [class.log-run]="line.startsWith('[') && !line.includes('✓') && !line.includes('✗')">{{ line }}</div>
+        }
+      </div>
+
+      <div class="status-summary">
+        <p class="col-label" style="margin-bottom: 0.75rem">Estado del sistema</p>
+        <div class="status-row">
+          <span class="status-dot" [ngClass]="etlStatus.dataset.status"></span>
+          <span class="status-item-label">Apache Pinot (dataset)</span>
+          <span class="status-item-val" [ngClass]="etlStatus.dataset.status">{{ getStatusLabel(etlStatus.dataset.status) }}</span>
+        </div>
+        <div class="status-row">
+          <span class="status-dot" [ngClass]="etlStatus.empresa.status"></span>
+          <span class="status-item-label">Pinot/Kafka (empresa)</span>
+          <span class="status-item-val" [ngClass]="etlStatus.empresa.status">{{ getStatusLabel(etlStatus.empresa.status) }}</span>
+        </div>
+        <div class="status-row">
+          <span class="status-dot" [ngClass]="etlStatus.dimensiones.status"></span>
+          <span class="status-item-label">Pinot (dimensiones)</span>
+          <span class="status-item-val" [ngClass]="etlStatus.dimensiones.status">{{ getStatusLabel(etlStatus.dimensiones.status) }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- TAB: Analytics                                     -->
+  <!-- ══════════════════════════════════════════════════ -->
+  @if (activeTab === 'analytics') {
+  <div class="analytics-layout">
+
+    <!-- Semana Selector -->
+    <div class="semana-bar">
+      <div class="semana-label-group">
+        <span class="semana-title">Período de análisis</span>
+        <span class="semana-subtitle">Semana {{ selectedSemana }} de {{ numSemanas }}</span>
+      </div>
+
+      <div class="semana-slider-group">
+        <span class="semana-num">Sem 1</span>
+        <input
+          type="range"
+          class="semana-slider"
+          min="1"
+          [max]="numSemanas"
+          [value]="selectedSemana"
+          (input)="setSemana(+$any($event.target).value)"
+        />
+        <span class="semana-num">Sem {{ numSemanas }}</span>
+      </div>
+
+      <div class="semana-pills">
+        @for (s of semanasList; track s) {
+          <button class="semana-pill" [class.active]="selectedSemana === s" (click)="setSemana(s)">
+            {{ s }}
+          </button>
+        }
+      </div>
+
+      <div class="semana-count">
+        <span class="semana-count-val">{{ totalGames | number }}</span>
+        <span class="semana-count-lbl">registros acumulados</span>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon">🕹️</div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total Registros</span>
+          <span class="kpi-value">{{ totalGames | number }}</span>
+          <span class="kpi-sub">Semana {{ selectedSemana }}</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">⭐</div>
+        <div class="kpi-info">
+          <span class="kpi-label">Mejor Valorado</span>
+          <span class="kpi-value kpi-value--sm">{{ bestGame || '—' }}</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">📺</div>
+        <div class="kpi-info">
+          <span class="kpi-label">Plataforma Líder</span>
+          <span class="kpi-value kpi-value--sm">{{ topPlatform || '—' }}</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">🎭</div>
+        <div class="kpi-info">
+          <span class="kpi-label">Género Principal</span>
+          <span class="kpi-value kpi-value--sm">{{ topGenre || '—' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <canvas baseChart
+          [datasets]="scatterData.datasets"
+          [options]="scatterOptions"
+          type="scatter">
+        </canvas>
+      </div>
+      <div class="chart-card">
+        <canvas baseChart
+          [data]="timelineData"
+          [options]="timelineOptions"
+          type="line">
+        </canvas>
+      </div>
+    </div>
+
+    <!-- Treemap + Top 10 -->
+    <div class="bottom-row">
+      <div class="chart-card treemap-card">
+        <p class="chart-title">Géneros por Volumen — Semana {{ selectedSemana }}</p>
+        <div #treemapContainer class="treemap-container"></div>
+      </div>
+
+      <div class="top10-card">
+        <p class="chart-title">Top 10 Juegos por Rating</p>
+        <table class="top10-table">
+          <thead>
+            <tr><th>#</th><th>Juego</th><th>Rating</th><th>Barra</th></tr>
+          </thead>
+          <tbody>
+            @for (game of top10Games; track game.id; let i = $index) {
+              <tr>
+                <td class="rank">{{ i + 1 }}</td>
+                <td class="game-name">{{ game.name }}</td>
+                <td class="rating">{{ game.rating }}</td>
+                <td>
+                  <div class="progress-bar">
+                    <div class="progress-fill" [style.width]="getRatingWidth(game.rating)"></div>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+  }
+
+</div>

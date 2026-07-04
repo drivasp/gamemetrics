@@ -1,0 +1,16 @@
+{
+  "schemaName": "fact_user_sessions",
+  "dimensionFieldSpecs": [
+    {"name": "session_id",  "dataType": "STRING"},
+    {"name": "user_id",     "dataType": "STRING"},
+    {"name": "device_info", "dataType": "STRING"},
+    {"name": "ip_hash",     "dataType": "STRING"},
+    {"name": "deleted",     "dataType": "BOOLEAN"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "last_seen_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"},
+    {"name": "expires_at",   "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"},
+    {"name": "created_at",   "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["session_id"]
+}

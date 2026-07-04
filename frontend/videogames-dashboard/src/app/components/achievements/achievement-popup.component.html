@@ -1,0 +1,16 @@
+<div class="ach-backdrop" *ngIf="data$ | async as data" (click)="close()">
+  <div class="ach-popup" [class.unlock]="data.kind === 'unlock'" [class.success]="data.kind === 'success'" (click)="$event.stopPropagation()">
+    <div class="glow"></div>
+    <div class="icon">
+      <span *ngIf="data.kind === 'unlock'">🏆</span>
+      <span *ngIf="data.kind === 'success'">✓</span>
+      <span *ngIf="data.kind === 'info'">ℹ</span>
+    </div>
+    <h2>{{ data.title }}</h2>
+    <p class="game" *ngIf="data.gameName">{{ data.gameName }}</p>
+    <ul *ngIf="data.achievements.length">
+      <li *ngFor="let a of data.achievements">{{ a }}</li>
+    </ul>
+    <button class="btn-ok" (click)="close()">Continuar</button>
+  </div>
+</div>

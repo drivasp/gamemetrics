@@ -1,0 +1,8 @@
+{
+  "tableName": "fact_bundle_items",
+  "tableType": "OFFLINE",
+  "segmentsConfig": {"replication": "1"},
+  "tableIndexConfig": {"loadMode": "MMAP"},
+  "tenants": {},
+  "metadata": {}
+}

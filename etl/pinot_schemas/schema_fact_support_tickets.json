@@ -1,0 +1,17 @@
+{
+  "schemaName": "fact_support_tickets",
+  "dimensionFieldSpecs": [
+    {"name": "ticket_id", "dataType": "STRING"},
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "subject", "dataType": "STRING"},
+    {"name": "body", "dataType": "STRING"},
+    {"name": "status", "dataType": "STRING"},
+    {"name": "priority", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["ticket_id"]
+}

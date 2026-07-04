@@ -1,0 +1,44 @@
+<div class="support-page">
+  <header>
+    <a routerLink="/store" class="back">← Tienda</a>
+    <h1>Soporte</h1>
+    <p class="sub">Centro de ayuda GameMetrics</p>
+  </header>
+
+  <div class="layout">
+    <section class="form-card">
+      <h2>Nuevo ticket</h2>
+      <label>Asunto</label>
+      <input [(ngModel)]="subject" placeholder="Describe el problema en una línea">
+      <label>Prioridad</label>
+      <select [(ngModel)]="priority">
+        <option value="low">Baja</option>
+        <option value="normal">Normal</option>
+        <option value="high">Alta</option>
+      </select>
+      <label>Detalle</label>
+      <textarea [(ngModel)]="body" rows="5" placeholder="Cuéntanos qué ocurrió..."></textarea>
+      <button [disabled]="sending" (click)="create()">
+        {{ sending ? 'Enviando...' : 'Enviar ticket' }}
+      </button>
+      <p class="ok" *ngIf="message">{{ message }}</p>
+      <p class="err" *ngIf="error">{{ error }}</p>
+    </section>
+
+    <section class="list-card">
+      <h2>Mis tickets</h2>
+      <div *ngIf="loading" class="state">Cargando...</div>
+      <article class="ticket" *ngFor="let t of tickets" [class.closed]="t.status === 'closed'">
+        <div class="top">
+          <h3>{{ t.subject }}</h3>
+          <span class="status">{{ t.status === 'open' ? 'Abierto' : 'Cerrado' }}</span>
+        </div>
+        <p>{{ t.body }}</p>
+        <div class="actions" *ngIf="t.status === 'open'">
+          <button (click)="close(t.ticket_id)">Cerrar ticket</button>
+        </div>
+      </article>
+      <p class="empty" *ngIf="!loading && !tickets.length">No tienes tickets todavía.</p>
+    </section>
+  </div>
+</div>

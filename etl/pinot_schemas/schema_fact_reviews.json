@@ -1,0 +1,19 @@
+{
+  "schemaName": "fact_reviews",
+  "dimensionFieldSpecs": [
+    {"name": "review_id",  "dataType": "STRING"},
+    {"name": "user_id",    "dataType": "STRING"},
+    {"name": "product_id", "dataType": "STRING"},
+    {"name": "game_slug",  "dataType": "STRING"},
+    {"name": "comment",    "dataType": "STRING"},
+    {"name": "deleted",    "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "rating", "dataType": "INT"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"},
+    {"name": "updated_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["review_id"]
+}

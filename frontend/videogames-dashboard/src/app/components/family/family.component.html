@@ -1,0 +1,71 @@
+<div class="family-page">
+  <header>
+    <a routerLink="/store" class="back">← Tienda</a>
+    <h1>Family Sharing</h1>
+    <p class="sub">Comparte tu biblioteca con tu grupo familiar</p>
+  </header>
+
+  <div *ngIf="loading" class="state">Cargando...</div>
+  <p class="ok" *ngIf="message">{{ message }}</p>
+  <p class="err" *ngIf="error">{{ error }}</p>
+
+  <section *ngIf="!loading && !group" class="card">
+    <h2>Crea tu grupo familiar</h2>
+    <p>Hasta 6 miembros. Comparte juegos que ya posees.</p>
+    <input [(ngModel)]="groupName" placeholder="Nombre del grupo (ej. Familia Pérez)">
+    <button (click)="create()">Crear grupo</button>
+  </section>
+
+  <ng-container *ngIf="!loading && group">
+    <div class="stats">
+      <div><span>Grupo</span><strong>{{ group.name }}</strong></div>
+      <div><span>Miembros</span><strong>{{ members.length }} / {{ group.max_members }}</strong></div>
+      <div><span>Tu rol</span><strong>{{ group.is_owner ? 'Dueño' : 'Miembro' }}</strong></div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Miembros</h2>
+        <article class="row" *ngFor="let m of members">
+          <div class="avatar">{{ (m.display_name || '?').charAt(0) }}</div>
+          <div>
+            <strong>{{ m.display_name }}</strong>
+            <p>{{ m.role === 'owner' ? 'Dueño' : 'Miembro' }}</p>
+          </div>
+        </article>
+
+        <div *ngIf="group.is_owner" class="invite">
+          <h3>Invitar por correo</h3>
+          <div class="row-input">
+            <input [(ngModel)]="inviteEmail" placeholder="correo@ejemplo.com">
+            <button (click)="invite()">Invitar</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Compartir un juego</h2>
+        <label>Juego de tu biblioteca</label>
+        <select [(ngModel)]="sharePurchaseId">
+          <option value="">Selecciona...</option>
+          <option *ngFor="let p of purchases" [value]="p.purchase_id">{{ p.game_name }}</option>
+        </select>
+        <label>Compartir con</label>
+        <select [(ngModel)]="shareWith">
+          <option value="">Selecciona miembro...</option>
+          <option *ngFor="let m of shareTargets()" [value]="m.user_id">{{ m.display_name }}</option>
+        </select>
+        <button (click)="share()">Compartir juego</button>
+
+        <h3 class="mt">Juegos compartidos</h3>
+        <article class="row" *ngFor="let s of shares">
+          <div>
+            <strong>{{ s.game_name }}</strong>
+            <p>→ {{ s.shared_with_name }}</p>
+          </div>
+        </article>
+        <p class="empty" *ngIf="!shares.length">Aún no hay juegos compartidos.</p>
+      </section>
+    </div>
+  </ng-container>
+</div>

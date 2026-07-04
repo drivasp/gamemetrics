@@ -1,0 +1,8 @@
+{
+  "schemaName": "dim_plataformas",
+  "dimensionFieldSpecs": [
+    {"name": "dim_id",  "dataType": "INT"},
+    {"name": "nombre",  "dataType": "STRING"}
+  ],
+  "metricFieldSpecs": []
+}

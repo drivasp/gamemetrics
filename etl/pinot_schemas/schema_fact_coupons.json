@@ -1,0 +1,18 @@
+{
+  "schemaName": "fact_coupons",
+  "dimensionFieldSpecs": [
+    {"name": "coupon_code", "dataType": "STRING"},
+    {"name": "discount_type", "dataType": "STRING"},
+    {"name": "max_uses", "dataType": "INT"},
+    {"name": "uses_count", "dataType": "INT"},
+    {"name": "valid_until", "dataType": "LONG"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "discount_value", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "valid_from", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["coupon_code"]
+}

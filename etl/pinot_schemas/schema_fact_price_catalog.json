@@ -1,0 +1,13 @@
+{
+  "schemaName": "fact_price_catalog",
+  "dimensionFieldSpecs": [
+    {"name": "price_id",    "dataType": "STRING"},
+    {"name": "product_id",  "dataType": "STRING"},
+    {"name": "region_code", "dataType": "STRING"},
+    {"name": "currency",    "dataType": "STRING"},
+    {"name": "semana",      "dataType": "INT"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "base_price", "dataType": "DOUBLE"}
+  ]
+}

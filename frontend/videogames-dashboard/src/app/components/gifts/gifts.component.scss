@@ -1,0 +1,84 @@
+.gifts-page {
+  min-height: 80vh;
+  background: #1b2838;
+  color: #c7d5e0;
+  padding: 28px 40px 60px;
+  max-width: 900px;
+}
+
+header {
+  margin-bottom: 20px;
+  h1 { margin: 8px 0 4px; color: #fff; }
+  .sub { margin: 0; color: #8f98a0; }
+  .back { color: #66c0f4; text-decoration: none; }
+}
+
+.pending-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: rgba(196, 85, 0, 0.18);
+  border: 1px solid #c45500;
+  border-radius: 3px;
+  color: #ffd9b0;
+  font-size: 0.9rem;
+
+  .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #ff7b00;
+    box-shadow: 0 0 8px #ff7b00;
+  }
+  strong { color: #fff; }
+}
+
+.tabs {
+  display: flex; gap: 8px; margin-bottom: 18px;
+  button {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: transparent; border: 1px solid #2a475e; color: #8f98a0;
+    padding: 8px 16px; cursor: pointer; border-radius: 2px;
+    &.active { color: #fff; border-color: #66c0f4; background: rgba(102,192,244,0.1); }
+  }
+  .tab-badge {
+    background: #c45500; color: #fff; font-size: 0.7rem; font-weight: 800;
+    padding: 1px 6px; border-radius: 10px;
+  }
+}
+
+.gift-card {
+  position: relative;
+  display: flex; gap: 14px; padding: 14px;
+  background: rgba(0,0,0,0.22); border: 1px solid #2a475e;
+  border-radius: 4px; margin-bottom: 10px;
+
+  &.pending {
+    border-color: #c45500;
+    box-shadow: 0 0 0 1px rgba(196, 85, 0, 0.25);
+  }
+
+  .new-tag {
+    position: absolute; top: 8px; right: 8px;
+    background: #c45500; color: #fff; font-size: 0.65rem; font-weight: 800;
+    padding: 2px 6px; border-radius: 2px; letter-spacing: 0.04em;
+  }
+
+  img { width: 120px; height: 68px; object-fit: cover; border-radius: 2px; }
+  h3 { margin: 0 0 6px; color: #fff; }
+  .msg { margin: 0 0 6px; font-style: italic; color: #a4d7f5; }
+  .meta { margin: 0; font-size: 0.82rem; color: #8f98a0; }
+}
+
+.actions {
+  margin-top: 10px; display: flex; gap: 8px;
+  button {
+    border: none; padding: 7px 14px; border-radius: 2px; cursor: pointer; font-weight: 700;
+  }
+  .accept { background: #75b022; color: #fff; }
+  .decline { background: #3d2a2a; color: #ff9b9b; }
+}
+
+.ok { color: #beee11; }
+.err { color: #ff6b6b; }
+.empty, .state { color: #8f98a0; padding: 20px 0; }

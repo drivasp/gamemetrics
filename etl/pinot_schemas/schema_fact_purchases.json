@@ -1,0 +1,21 @@
+{
+  "schemaName": "fact_purchases",
+  "dimensionFieldSpecs": [
+    {"name": "purchase_id", "dataType": "STRING"},
+    {"name": "order_id",    "dataType": "STRING"},
+    {"name": "user_id",     "dataType": "STRING"},
+    {"name": "product_id",  "dataType": "STRING"},
+    {"name": "game_slug",   "dataType": "STRING"},
+    {"name": "game_name",   "dataType": "STRING"},
+    {"name": "game_image",  "dataType": "STRING"},
+    {"name": "refunded",    "dataType": "BOOLEAN"},
+    {"name": "deleted",     "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "amount", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "purchased_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["purchase_id"]
+}

@@ -1,0 +1,194 @@
+<div class="empresa-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="company-name">GameMetrics S.A.</span>
+      <span class="company-sub">Modelo de Empresa</span>
+    </div>
+    <nav class="table-list">
+      @for (t of tables; track t.key) {
+        <button class="table-item" [class.active]="selected.key === t.key" (click)="loadTable(t)">
+          <span class="table-icon">{{ t.icon }}</span>
+          <span class="table-label">{{ t.label }}</span>
+        </button>
+      }
+    </nav>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main-content">
+
+    <!-- Header -->
+    <div class="content-header">
+      <div class="header-left">
+        <span class="table-icon-lg">{{ selected.icon }}</span>
+        <div>
+          <h2 class="table-title">{{ selected.label }}</h2>
+          <p class="table-desc">{{ selected.desc }}</p>
+        </div>
+      </div>
+      <div class="header-right">
+        @if (page) {
+          <span class="record-count">{{ page.totalItems | number }} registros</span>
+        }
+        <button class="btn-new" (click)="openCreate()">+ Nuevo</button>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-bar">
+      <input type="text" [(ngModel)]="searchText" placeholder="Buscar en esta página..." class="search-input" />
+    </div>
+
+    <!-- Loading -->
+    @if (loading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>Cargando datos...</span>
+      </div>
+    }
+
+    <!-- Table -->
+    @if (!loading && page && filteredItems.length > 0) {
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              @for (col of columns; track col) {
+                <th>{{ formatHeader(col) }}</th>
+              }
+              <th class="actions-th">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of filteredItems; track row['id']) {
+              <tr>
+                @for (col of columns; track col) {
+                  <td [class.id-col]="col === 'id'" [class.bool-col]="row[col] === true || row[col] === false">
+                    @if (col === 'id') {
+                      <span class="id-badge">{{ formatCell(row[col]).slice(0, 8) }}</span>
+                    } @else if (row[col] === true) {
+                      <span class="badge badge-green">Sí</span>
+                    } @else if (row[col] === false) {
+                      <span class="badge badge-gray">No</span>
+                    } @else {
+                      {{ formatCell(row[col]) }}
+                    }
+                  </td>
+                }
+                <td class="actions-td">
+                  <button class="action-btn edit" (click)="openEdit(row)">Editar</button>
+                  <button class="action-btn delete" (click)="confirmDelete(row)">Eliminar</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      @if (page.totalPages > 1 && !searchText) {
+        <div class="pagination">
+          <button class="page-btn" [disabled]="currentPage === 1" (click)="goPage(currentPage - 1)">‹</button>
+          @if (pageNumbers[0] > 1) {
+            <button class="page-btn" (click)="goPage(1)">1</button>
+            @if (pageNumbers[0] > 2) { <span class="ellipsis">…</span> }
+          }
+          @for (n of pageNumbers; track n) {
+            <button class="page-btn" [class.active]="n === currentPage" (click)="goPage(n)">{{ n }}</button>
+          }
+          @if (pageNumbers[pageNumbers.length - 1] < page.totalPages) {
+            @if (pageNumbers[pageNumbers.length - 1] < page.totalPages - 1) { <span class="ellipsis">…</span> }
+            <button class="page-btn" (click)="goPage(page.totalPages)">{{ page.totalPages }}</button>
+          }
+          <button class="page-btn" [disabled]="currentPage === page.totalPages" (click)="goPage(currentPage + 1)">›</button>
+          <span class="page-info">Pág. {{ currentPage }} / {{ page.totalPages }}</span>
+        </div>
+      }
+    }
+
+    <!-- Empty -->
+    @if (!loading && (!page || filteredItems.length === 0)) {
+      <div class="empty-state">
+        <span>Sin resultados{{ searchText ? ' para "' + searchText + '"' : '' }}</span>
+      </div>
+    }
+
+  </main>
+</div>
+
+<!-- ── Modal Crear / Editar ─────────────────────────── -->
+@if (modalMode) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          {{ modalMode === 'create' ? 'Nuevo registro — ' + selected.label : 'Editar registro — ' + selected.label }}
+        </h3>
+        <button class="modal-close" (click)="closeModal()">✕</button>
+      </div>
+
+      <form class="modal-form" (ngSubmit)="save()" #crudForm="ngForm">
+        <div class="form-grid">
+          @for (field of currentFields; track field.name) {
+            <div class="form-group" [class.full-width]="field.type === 'text' && (field.name.includes('descripcion') || field.name.includes('notas'))">
+              <label class="form-label">
+                {{ field.label }}
+                @if (field.required) { <span class="required-mark">*</span> }
+              </label>
+
+              @if (field.type === 'bool') {
+                <select [(ngModel)]="formData[field.name]" [name]="field.name" class="form-input">
+                  <option [ngValue]="true">Sí</option>
+                  <option [ngValue]="false">No</option>
+                </select>
+              } @else if (field.type === 'number') {
+                <input type="number" [(ngModel)]="formData[field.name]" [name]="field.name"
+                  class="form-input" [placeholder]="field.placeholder || '0'" />
+              } @else if (field.type === 'email') {
+                <input type="email" [(ngModel)]="formData[field.name]" [name]="field.name"
+                  class="form-input" [placeholder]="field.placeholder || 'correo@ejemplo.com'" />
+              } @else {
+                <input type="text" [(ngModel)]="formData[field.name]" [name]="field.name"
+                  class="form-input" [placeholder]="field.placeholder || ''"
+                  [required]="field.required || false" />
+              }
+            </div>
+          }
+        </div>
+
+        @if (crudError) {
+          <p class="crud-error">{{ crudError }}</p>
+        }
+
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeModal()">Cancelar</button>
+          <button type="submit" class="btn-save" [disabled]="saving">
+            {{ saving ? 'Guardando...' : (modalMode === 'create' ? 'Crear registro' : 'Guardar cambios') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ── Confirmación de eliminación ─────────────────── -->
+@if (showDeleteConfirm) {
+  <div class="modal-overlay" (click)="cancelDelete()">
+    <div class="confirm-box" (click)="$event.stopPropagation()">
+      <div class="confirm-icon">⚠️</div>
+      <h3 class="confirm-title">Eliminar registro</h3>
+      <p class="confirm-msg">
+        ¿Estás seguro de eliminar <strong>{{ deleteName }}</strong>?<br>
+        Esta acción no se puede deshacer.
+      </p>
+      <div class="confirm-actions">
+        <button class="btn-cancel" (click)="cancelDelete()">Cancelar</button>
+        <button class="btn-delete" [disabled]="deleting" (click)="executeDelete()">
+          {{ deleting ? 'Eliminando...' : 'Sí, eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

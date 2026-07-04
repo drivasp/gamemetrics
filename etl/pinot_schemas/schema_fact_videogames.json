@@ -1,0 +1,32 @@
+{
+  "schemaName": "fact_videogames",
+  "dimensionFieldSpecs": [
+    {"name": "id",          "dataType": "STRING"},
+    {"name": "slug",        "dataType": "STRING"},
+    {"name": "name",        "dataType": "STRING"},
+    {"name": "released",    "dataType": "STRING"},
+    {"name": "updated",     "dataType": "STRING"},
+    {"name": "tba",         "dataType": "BOOLEAN"},
+    {"name": "esrb_rating", "dataType": "STRING"},
+    {"name": "platforms",   "dataType": "STRING"},
+    {"name": "developers",  "dataType": "STRING"},
+    {"name": "genres",      "dataType": "STRING"},
+    {"name": "publishers",  "dataType": "STRING"},
+    {"name": "semana",      "dataType": "INT"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "metacritic",        "dataType": "FLOAT"},
+    {"name": "rating",            "dataType": "FLOAT"},
+    {"name": "achievements",      "dataType": "INT"},
+    {"name": "ratings_count",     "dataType": "INT"},
+    {"name": "suggestions_count", "dataType": "INT"}
+  ],
+  "dateTimeFieldSpecs": [
+    {
+      "name": "released_ts",
+      "dataType": "LONG",
+      "format": "1:SECONDS:EPOCH",
+      "granularity": "1:DAYS"
+    }
+  ]
+}

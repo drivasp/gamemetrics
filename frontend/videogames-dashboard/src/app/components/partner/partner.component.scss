@@ -1,0 +1,58 @@
+.partner-page {
+  min-height: 80vh; background: #1b2838; color: #c7d5e0;
+  padding: 28px 40px 60px;
+}
+header { margin-bottom: 18px;
+  h1 { margin: 8px 0 4px; color: #fff; }
+  .sub { margin: 0; color: #8f98a0; }
+  .back { color: #66c0f4; text-decoration: none; }
+}
+.register-card, .card {
+  background: rgba(0,0,0,0.22); border: 1px solid #2a475e; border-radius: 4px; padding: 16px;
+  max-width: 480px;
+  h2 { margin: 0 0 10px; color: #fff; font-size: 0.95rem; }
+  p { color: #8f98a0; }
+}
+input {
+  width: 100%; box-sizing: border-box; margin-bottom: 8px;
+  background: #16202d; border: 1px solid #2a475e; color: #fff;
+  padding: 10px; border-radius: 2px;
+}
+button {
+  background: linear-gradient(90deg, #75b022, #588a1b);
+  border: none; color: #fff; font-weight: 700; padding: 10px 14px;
+  border-radius: 2px; cursor: pointer;
+}
+.stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;
+  max-width: 900px;
+  @media (max-width: 700px) { grid-template-columns: 1fr; }
+}
+.stat {
+  background: rgba(0,0,0,0.22); border: 1px solid #2a475e; border-radius: 4px; padding: 14px;
+  span { display: block; color: #8f98a0; font-size: 0.75rem; margin-bottom: 4px; }
+  strong { color: #fff; font-size: 1.1rem; }
+  .green { color: #beee11; }
+}
+.grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 1000px;
+  .wide { grid-column: 1 / -1; }
+  @media (max-width: 800px) { grid-template-columns: 1fr; .wide { grid-column: auto; } }
+}
+.card { max-width: none; }
+.row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  strong { color: #fff; }
+  p { margin: 2px 0 0; font-size: 0.78rem; }
+  .green { color: #beee11; font-weight: 700; }
+}
+.ok { color: #beee11; } .err { color: #ff6b6b; }
+.empty, .state { color: #8f98a0; }
+.key-reveal {
+  margin: 12px 0; padding: 10px; background: #0e141b; border: 1px solid #4c6b22; border-radius: 3px;
+  code { display: block; margin-top: 6px; color: #beee11; word-break: break-all; }
+}
+.revoke {
+  background: #3d2a2a !important; color: #ff9b9b !important; padding: 6px 10px !important;
+}

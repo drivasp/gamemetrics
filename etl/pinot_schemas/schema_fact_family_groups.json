@@ -1,0 +1,14 @@
+{
+  "schemaName": "fact_family_groups",
+  "dimensionFieldSpecs": [
+    {"name": "group_id", "dataType": "STRING"},
+    {"name": "owner_id", "dataType": "STRING"},
+    {"name": "name", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [{"name": "max_members", "dataType": "INT"}],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["group_id"]
+}

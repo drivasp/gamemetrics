@@ -1,0 +1,12 @@
+{
+  "tableName": "dim_desarrolladores",
+  "tableType": "OFFLINE",
+  "segmentsConfig": {
+    "replication": "1"
+  },
+  "tableIndexConfig": {
+    "loadMode": "MMAP"
+  },
+  "tenants": {},
+  "metadata": {}
+}

@@ -1,0 +1,43 @@
+<div class="wallet-page">
+  <header>
+    <a routerLink="/store" class="back">← Tienda</a>
+    <h1>Cartera GameMetrics</h1>
+    <p class="sub">Saldo para compras y regalos · estilo Steam Wallet</p>
+  </header>
+
+  <div *ngIf="loading" class="state">Cargando cartera...</div>
+
+  <div *ngIf="!loading" class="layout">
+    <section class="balance-card">
+      <span class="label">Saldo disponible</span>
+      <div class="amount">{{ balance | currency:'USD':'symbol':'1.2-2' }}</div>
+
+      <h3>Recargar</h3>
+      <div class="presets">
+        <button *ngFor="let p of presets" [class.active]="amount === p" (click)="amount = p">${{ p }}</button>
+      </div>
+      <div class="topup-row">
+        <input type="number" [(ngModel)]="amount" min="1" max="500" step="1">
+        <button class="btn-topup" [disabled]="topping" (click)="topUp()">
+          {{ topping ? 'Procesando...' : 'Añadir fondos' }}
+        </button>
+      </div>
+      <p class="ok" *ngIf="message">{{ message }}</p>
+      <p class="err" *ngIf="error">{{ error }}</p>
+    </section>
+
+    <section class="history">
+      <h2>Historial</h2>
+      <article class="tx" *ngFor="let t of txs">
+        <div>
+          <strong>{{ txLabel(t) }}</strong>
+          <span class="date">{{ t.created_at }}</span>
+        </div>
+        <span class="val" [class.credit]="isCredit(t)" [class.debit]="!isCredit(t)">
+          {{ isCredit(t) ? '+' : '-' }}{{ t.amount | currency:'USD':'symbol':'1.2-2' }}
+        </span>
+      </article>
+      <p *ngIf="txs.length === 0" class="empty">Aún no hay movimientos.</p>
+    </section>
+  </div>
+</div>

@@ -1,0 +1,19 @@
+{
+  "schemaName": "fact_refunds",
+  "dimensionFieldSpecs": [
+    {"name": "refund_id",   "dataType": "STRING"},
+    {"name": "purchase_id", "dataType": "STRING"},
+    {"name": "payment_id",  "dataType": "STRING"},
+    {"name": "user_id",     "dataType": "STRING"},
+    {"name": "reason",      "dataType": "STRING"},
+    {"name": "status",      "dataType": "STRING"},
+    {"name": "deleted",     "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "amount", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["refund_id"]
+}

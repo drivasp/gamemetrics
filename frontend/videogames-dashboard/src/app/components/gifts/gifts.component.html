@@ -1,0 +1,52 @@
+<div class="gifts-page">
+  <header>
+    <a routerLink="/store" class="back">← Tienda</a>
+    <h1>Regalos</h1>
+    <p class="sub">Recibe y gestiona regalos de la comunidad</p>
+  </header>
+
+  <div class="pending-banner" *ngIf="pendingCount > 0 && tab === 'inbox'">
+    <span class="dot"></span>
+    Tienes <strong>{{ pendingCount }}</strong> regalo(s) pendiente(s) de aceptar.
+  </div>
+
+  <div class="tabs">
+    <button [class.active]="tab === 'inbox'" (click)="tab = 'inbox'">
+      Recibidos
+      <span class="tab-badge" *ngIf="pendingCount > 0">{{ pendingCount }}</span>
+    </button>
+    <button [class.active]="tab === 'sent'" (click)="tab = 'sent'">Enviados</button>
+  </div>
+
+  <p class="ok" *ngIf="message">{{ message }}</p>
+  <p class="err" *ngIf="error">{{ error }}</p>
+  <div *ngIf="loading" class="state">Cargando...</div>
+
+  <section *ngIf="!loading && tab === 'inbox'">
+    <article class="gift-card" *ngFor="let g of inbox" [class.pending]="g.status === 'pending'">
+      <div class="new-tag" *ngIf="g.status === 'pending'">NUEVO</div>
+      <img *ngIf="g.game_image" [src]="g.game_image" [alt]="g.game_name">
+      <div class="info">
+        <h3>{{ g.game_name }}</h3>
+        <p class="msg" *ngIf="g.message">“{{ g.message }}”</p>
+        <p class="meta">{{ statusLabel(g.status) }} · {{ g.amount | currency:'USD':'symbol':'1.2-2' }}</p>
+        <div class="actions" *ngIf="g.status === 'pending'">
+          <button class="accept" (click)="accept(g)">Aceptar y añadir a biblioteca</button>
+          <button class="decline" (click)="decline(g)">Rechazar</button>
+        </div>
+      </div>
+    </article>
+    <p *ngIf="inbox.length === 0" class="empty">No tienes regalos pendientes.</p>
+  </section>
+
+  <section *ngIf="!loading && tab === 'sent'">
+    <article class="gift-card" *ngFor="let g of sent">
+      <img *ngIf="g.game_image" [src]="g.game_image" [alt]="g.game_name">
+      <div class="info">
+        <h3>{{ g.game_name }}</h3>
+        <p class="meta">Para {{ g.recipient_email }} · {{ statusLabel(g.status) }}</p>
+      </div>
+    </article>
+    <p *ngIf="sent.length === 0" class="empty">Aún no has enviado regalos.</p>
+  </section>
+</div>

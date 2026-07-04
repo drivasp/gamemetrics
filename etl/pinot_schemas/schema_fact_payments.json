@@ -1,0 +1,20 @@
+{
+  "schemaName": "fact_payments",
+  "dimensionFieldSpecs": [
+    {"name": "payment_id",         "dataType": "STRING"},
+    {"name": "order_id",           "dataType": "STRING"},
+    {"name": "user_id",            "dataType": "STRING"},
+    {"name": "provider",           "dataType": "STRING"},
+    {"name": "stripe_session_id",  "dataType": "STRING"},
+    {"name": "idempotency_key",    "dataType": "STRING"},
+    {"name": "status",             "dataType": "STRING"},
+    {"name": "deleted",            "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "amount", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["payment_id"]
+}

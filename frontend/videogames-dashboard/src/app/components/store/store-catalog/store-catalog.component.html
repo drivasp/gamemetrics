@@ -1,0 +1,114 @@
+<div class="catalog-layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+
+    <!-- Search -->
+    <div class="filter-group">
+      <label class="filter-label">Buscar</label>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Nombre del juego..."
+        [ngModel]="search"
+        (ngModelChange)="onSearchInput($event)">
+    </div>
+
+    <!-- Ordenar -->
+    <div class="filter-group">
+      <label class="filter-label">Ordenar por</label>
+      <select class="filter-select" [(ngModel)]="orderBy" (change)="onOrderChange()">
+        <option *ngFor="let o of orderOptions" [value]="o.value">{{ o.label }}</option>
+      </select>
+    </div>
+
+    <!-- Precio -->
+    <div class="filter-group">
+      <label class="filter-label">Precio</label>
+      <div class="checkbox-list">
+        <button
+          *ngFor="let opt of [{v:'',l:'Todos'},{v:'free',l:'Gratis'},{v:'paid',l:'De pago'}]"
+          class="check-item"
+          [class.active]="selectedPrice === opt.v || (opt.v === '' && selectedPrice === '')"
+          (click)="selectPrice(opt.v)">
+          <span class="check-box" [class.checked]="selectedPrice === opt.v || (opt.v === '' && selectedPrice === '')">✓</span>
+          {{ opt.l }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Géneros -->
+    <div class="filter-group" *ngIf="allGenres.length > 0">
+      <label class="filter-label">Género</label>
+      <div class="checkbox-list scrollable">
+        <button
+          *ngFor="let g of allGenres"
+          class="check-item"
+          [class.active]="selectedGenre === g"
+          (click)="selectGenre(g)">
+          <span class="check-box" [class.checked]="selectedGenre === g">✓</span>
+          {{ g }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Plataformas -->
+    <div class="filter-group" *ngIf="allPlatforms.length > 0">
+      <label class="filter-label">Plataforma</label>
+      <div class="checkbox-list scrollable">
+        <button
+          *ngFor="let p of allPlatforms"
+          class="check-item"
+          [class.active]="selectedPlatform === p"
+          (click)="selectPlatform(p)">
+          <span class="check-box" [class.checked]="selectedPlatform === p">✓</span>
+          {{ p }}
+        </button>
+      </div>
+    </div>
+
+    <button *ngIf="hasActiveFilters" class="btn-clear" (click)="clearFilters()">
+      Limpiar filtros
+    </button>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="catalog-main">
+
+    <div class="catalog-bar">
+      <span class="showing-count" *ngIf="!loading && totalCount > 0">
+        Mostrando {{ showingFrom }}–{{ showingTo }} de {{ totalCount | number }} juegos
+      </span>
+      <span class="showing-count" *ngIf="loading">Buscando...</span>
+      <span class="showing-count" *ngIf="!loading && totalCount === 0">Sin resultados</span>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- Empty -->
+    <div *ngIf="!loading && games.length === 0" class="empty-state">
+      <span>🔍</span>
+      <p>No se encontraron juegos con los filtros seleccionados.</p>
+      <button class="btn-clear" (click)="clearFilters()">Limpiar filtros</button>
+    </div>
+
+    <!-- Grid -->
+    <div *ngIf="!loading && games.length > 0" class="games-grid">
+      <app-game-card *ngFor="let g of games" [game]="g"></app-game-card>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button class="page-btn" [disabled]="page === 0" (click)="goPage(page)">‹</button>
+      <button
+        *ngFor="let n of pageNumbers"
+        class="page-btn" [class.active]="n === page + 1"
+        (click)="goPage(n)">{{ n }}</button>
+      <button class="page-btn" [disabled]="page + 1 >= totalPages" (click)="goPage(page + 2)">›</button>
+    </div>
+
+  </main>
+</div>

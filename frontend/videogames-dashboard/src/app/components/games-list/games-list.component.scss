@@ -1,0 +1,50 @@
+:host {
+  display: block;
+  padding: 1.5rem;
+}
+
+.games-container {
+  h2 {
+    color: #e0e0e0;
+    margin: 0 0 1.5rem;
+  }
+}
+
+.search-field {
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 1rem;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  background: #1a1a2e;
+  border-radius: 12px;
+  border: 1px solid #2a2a3e;
+}
+
+.games-table {
+  width: 100%;
+  background: transparent;
+
+  th {
+    color: #888 !important;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    background: #1a1a2e;
+  }
+
+  td {
+    color: #ccc;
+    border-bottom-color: #2a2a3e;
+  }
+
+  tr:hover td {
+    background: #22223a;
+  }
+}
+
+mat-paginator {
+  background: transparent;
+  color: #ccc;
+}

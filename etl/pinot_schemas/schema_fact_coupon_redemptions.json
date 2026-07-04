@@ -1,0 +1,17 @@
+{
+  "schemaName": "fact_coupon_redemptions",
+  "dimensionFieldSpecs": [
+    {"name": "redemption_id", "dataType": "STRING"},
+    {"name": "coupon_code", "dataType": "STRING"},
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "order_id", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "discount_applied", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["redemption_id"]
+}

@@ -1,0 +1,18 @@
+{
+  "schemaName": "fact_install_states",
+  "dimensionFieldSpecs": [
+    {"name": "install_id", "dataType": "STRING"},
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "product_id", "dataType": "STRING"},
+    {"name": "build_id", "dataType": "STRING"},
+    {"name": "status", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "progress_pct", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "updated_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["install_id"]
+}

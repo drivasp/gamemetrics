@@ -1,0 +1,136 @@
+schema: spec-driven
+
+# ============================================================================
+#  CONSTITUCIÓN DEL PROYECTO — GameMetrics S.A.
+#  (En OpenSpec, la "constitución" vive aquí, en el campo context.
+#   Es el documento que el agente de IA lee SIEMPRE antes de generar
+#   cualquier artefacto: propuestas, specs, diseño y tareas.)
+# ============================================================================
+
+context: |
+  # GameMetrics S.A. — Constitución del Proyecto
+
+  ## 1. Identidad y propósito
+  GameMetrics S.A. es una plataforma digital de análisis, descubrimiento y
+  comercialización de videojuegos. Combina un catálogo de ~1.7 millones de
+  títulos con un módulo de inteligencia de negocio (BI) que visualiza
+  tendencias y KPIs en tiempo real. Modelo de negocio B2C con proyección B2B.
+
+  Misión: centralizar el análisis de videojuegos y facilitar su descubrimiento
+  y comercialización mediante Big Data, streaming en tiempo real e integración
+  con fuentes de datos globales.
+
+  ## 2. Stack tecnológico REAL (verificado en el código, no aspiracional)
+  - Backend:   FastAPI (Python 3.11), routers modulares por dominio.
+  - Datos:     Apache Pinot 1.0.0
+                 * OFFLINE (Parquet): fact_videogames + 5 dimensiones.
+                 * REALTIME (Kafka):  fact_users, fact_wishlist, emp_records.
+  - Streaming: Apache Kafka 7.7.2 (cliente aiokafka), upsert por key.
+  - Frontend:  Angular 17 (standalone components), guard de autenticación.
+  - ETL:       Flask API (etl_server.py) + scripts numerados 00..09.
+  - API ext.:  RAWG API (media de juegos: imágenes, screenshots, descripción).
+  - Auth:      bcrypt (passlib) + JWT HS256, expiración 7 días.
+  - Infra:     Docker Compose, red gamemetrics 172.20.0.0/16.
+  - Arranque:  inicio.ps1 (resuelve NodeExistsException de Zookeeper/Kafka).
+
+  ## 3. Principios de arquitectura (NO negociables)
+  P1. Arquitectura orientada a eventos: TODA escritura de datos transaccionales
+      pasa por Kafka antes de llegar a Pinot. Nunca se escribe directo a Pinot.
+  P2. Una sola fuente de verdad por tabla. Las tablas REALTIME usan UPSERT por
+      clave primaria; el borrado es lógico (soft delete) mediante tombstone con
+      deleted=TRUE, nunca DELETE físico.
+  P3. PocketBase está ELIMINADO. Todo el flujo de datos va por Kafka → Pinot.
+      Cualquier referencia a PocketBase es código muerto y no debe extenderse.
+  P4. Consistencia eventual < 2 segundos entre el evento Kafka y su visibilidad
+      en Pinot REALTIME. La UI debe contemplar esa latencia.
+  P5. Las claves de API y secretos (RAWG, JWT_SECRET) viven solo en el backend
+      vía variables de entorno; jamás se exponen al frontend.
+  P6. El catálogo analítico (fact_videogames) es OFFLINE e inmutable por
+      semana; se filtra con "WHERE semana <= N" (slider de semanas 1-17).
+
+  ## 4. Niveles empresariales (estructura para las especificaciones)
+  El sistema se organiza en tres niveles, y cada caso de uso pertenece a uno.
+  Las especificaciones se agrupan por NIVEL → DEPARTAMENTO → PAQUETE.
+
+  NIVEL ESTRATÉGICO (Dirección / Analítica BI)
+    Departamento: Inteligencia de Negocio
+      Paquete dashboard:    KPIs, gráficas por género/plataforma/ESRB/año.
+      Paquete analitica:    segmentación, abandono de wishlist, forecasting.
+
+  NIVEL TÁCTICO (Administración / Gestión de datos)
+    Departamento: Administración de Plataforma
+      Paquete empresa:      CRUD de 10 colecciones empresariales (emp_records).
+      Paquete dimensiones:  5 tablas de dimensión OFFLINE (solo lectura).
+      Paquete etl:          pipeline Parquet→Pinot y recargas Kafka.
+
+  NIVEL OPERATIVO (Usuario final / Tienda)
+    Departamento: Cuentas y Acceso
+      Paquete auth:         registro, login, perfil, avatar.
+    Departamento: Tienda
+      Paquete store:        home, catálogo con filtros, detalle de juego.
+      Paquete user:         wishlist (agregar, ver, eliminar).
+    Departamento: Comercio (planificado — roadmap etapas 3-5)
+      Paquete cart:         carrito + pago Stripe sandbox.
+      Paquete library:      biblioteca de juegos comprados.
+      Paquete reviews:      reseñas verificadas (solo compradores).
+
+  ## 5. Actores del sistema
+  - Visitante: navega tienda, no puede usar wishlist ni comprar.
+  - Usuario Registrado: wishlist, perfil, (futuro) carrito/biblioteca/reseñas.
+  - Administrador: gestiona colecciones empresa y usuarios.
+  - Administrador ETL: ejecuta pipeline, monitorea contenedores y dimensiones.
+  - Analista BI: consulta dashboards y reportes analíticos.
+  - Sistema (Kafka producer): emite eventos en cada operación transaccional.
+  - Partner externo (futuro): consume endpoints documentados con OpenAPI.
+
+  ## 6. Convenciones de código
+  C1. Cada paquete del backend es un módulo con router.py + archivos por
+      responsabilidad. Nombres de archivo en español (registro.py, login.py).
+  C2. Cada endpoint nuevo se registra en el router.py del paquete; las rutas
+      genéricas /{slug} o /{id} SIEMPRE van al final para no capturar rutas
+      específicas.
+  C3. Toda entrada de texto que llega a una query Pinot pasa por la función
+      _esc() para escapar comillas (prevención de inyección).
+  C4. Escrituras transaccionales: kafka_send(topic, key, payload) con la clave
+      = id del registro, para garantizar upsert idempotente.
+  C5. DTOs con Pydantic (response_model explícito en cada endpoint).
+  C6. Frontend: un servicio Angular por dominio (auth, store, wishlist, etc.);
+      componentes standalone; rutas protegidas con authGuard.
+  C7. Fórmula de precio (regla de negocio fija): price = max(1.99, rating*8 +
+      metacritic*0.4); si rating=0 y metacritic=0 → 0.00 (juego gratis).
+
+  ## 7. Estándares de calidad y seguridad
+  Q1. Contraseñas siempre con bcrypt; jamás en texto plano ni en logs.
+  Q2. Endpoints protegidos validan el JWT (Bearer) antes de operar.
+  Q3. Respuestas de dashboard: KPIs < 2s, gráficas < 3s sobre 1.7M registros.
+  Q4. Datos y fórmulas provienen de fuentes verificadas (código, RAWG, Pinot);
+      nunca se inventan valores.
+  Q5. Todo cambio debe trazar a un caso de uso (CU-E/T/O) y a un objetivo
+      estratégico (OE1-OE4).
+
+  ## 8. Fuera de alcance (en la fase actual)
+  - Kubernetes / Helm (planificado).
+  - CI/CD con GitHub Actions (planificado).
+  - Modelos de ML en producción (clustering, XGBoost, recomendación) — son
+    roadmap, no implementación actual.
+
+# ============================================================================
+#  REGLAS POR ARTEFACTO
+#  (Restricciones que el agente debe respetar al generar cada documento.)
+# ============================================================================
+rules:
+  proposal:
+    - Toda propuesta debe indicar a qué NIVEL empresarial pertenece (estratégico, táctico u operativo) y a qué paquete.
+    - Incluir siempre una sección "Fuera de alcance" (Non-goals).
+    - Vincular el cambio con al menos un caso de uso (CU-*) y un objetivo estratégico (OE1-OE4).
+  spec:
+    - Usar palabras clave RFC 2119 (MUST/SHALL/SHOULD/MAY) en los requisitos.
+    - Cada requisito debe tener al menos un escenario Given/When/Then verificable.
+    - Las especificaciones se identifican con códigos (RF-XXX, RNF-XXX, RN-XXX, CA-XXX).
+    - Respetar los principios de arquitectura P1-P6; no proponer escrituras directas a Pinot ni reintroducir PocketBase.
+  design:
+    - El diseño técnico debe usar únicamente el stack real declarado en context.
+    - Toda escritura transaccional pasa por Kafka con upsert por clave.
+  tasks:
+    - Dividir el trabajo en tareas pequeñas y verificables (máx ~2 horas cada una).
+    - Cada tarea debe ser comprobable contra un criterio de aceptación (CA-*).

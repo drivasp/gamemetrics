@@ -1,0 +1,74 @@
+<div class="friends-page">
+  <header>
+    <a routerLink="/store" class="back">← Tienda</a>
+    <h1>Amigos</h1>
+    <p class="sub">Conecta con la comunidad GameMetrics</p>
+  </header>
+
+  <div class="add-box">
+    <h3>Añadir amigo</h3>
+    <div class="row">
+      <input type="email" [(ngModel)]="email" placeholder="correo@ejemplo.com" (keyup.enter)="sendRequest()">
+      <button (click)="sendRequest()">Enviar solicitud</button>
+    </div>
+    <p class="ok" *ngIf="message">{{ message }}</p>
+    <p class="err" *ngIf="error">{{ error }}</p>
+  </div>
+
+  <div class="tabs">
+    <button [class.active]="tab === 'friends'" (click)="tab = 'friends'">Amigos ({{ friends.length }})</button>
+    <button [class.active]="tab === 'requests'" (click)="tab = 'requests'">
+      Solicitudes
+      <span class="badge" *ngIf="incoming.length">{{ incoming.length }}</span>
+    </button>
+    <button [class.active]="tab === 'activity'" (click)="tab = 'activity'">Actividad</button>
+  </div>
+
+  <div *ngIf="loading" class="state">Cargando...</div>
+
+  <section *ngIf="!loading && tab === 'friends'">
+    <article class="card" *ngFor="let f of friends">
+      <div class="avatar">{{ (f.user.display_name || '?').charAt(0) }}</div>
+      <div>
+        <h3>{{ f.user.display_name }}</h3>
+        <p>{{ f.user.email }}</p>
+      </div>
+    </article>
+    <p class="empty" *ngIf="!friends.length">Aún no tienes amigos. Envía una solicitud por correo.</p>
+  </section>
+
+  <section *ngIf="!loading && tab === 'requests'">
+    <h3 class="sec">Recibidas</h3>
+    <article class="card" *ngFor="let f of incoming">
+      <div class="avatar">{{ (f.user.display_name || '?').charAt(0) }}</div>
+      <div class="grow">
+        <h3>{{ f.user.display_name }}</h3>
+        <p>{{ f.user.email }}</p>
+      </div>
+      <button class="accept" (click)="accept(f.friendship_id)">Aceptar</button>
+      <button class="decline" (click)="decline(f.friendship_id)">Rechazar</button>
+    </article>
+    <p class="empty" *ngIf="!incoming.length">No hay solicitudes pendientes.</p>
+
+    <h3 class="sec">Enviadas</h3>
+    <article class="card" *ngFor="let f of outgoing">
+      <div class="avatar">{{ (f.user.display_name || '?').charAt(0) }}</div>
+      <div>
+        <h3>{{ f.user.display_name }}</h3>
+        <p>Pendiente de respuesta</p>
+      </div>
+      <button class="decline" (click)="decline(f.friendship_id)">Cancelar</button>
+    </article>
+  </section>
+
+  <section *ngIf="!loading && tab === 'activity'">
+    <article class="activity" *ngFor="let a of activity">
+      <div class="avatar sm">{{ (a.display_name || '?').charAt(0) }}</div>
+      <div>
+        <strong>{{ a.display_name }}</strong>
+        <p>{{ a.summary }}</p>
+      </div>
+    </article>
+    <p class="empty" *ngIf="!activity.length">Sin actividad reciente.</p>
+  </section>
+</div>

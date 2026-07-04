@@ -1,0 +1,21 @@
+{
+  "schemaName": "fact_users",
+  "dimensionFieldSpecs": [
+    {"name": "user_id",       "dataType": "STRING"},
+    {"name": "email",         "dataType": "STRING"},
+    {"name": "password_hash", "dataType": "STRING"},
+    {"name": "display_name",  "dataType": "STRING"},
+    {"name": "bio",           "dataType": "STRING"},
+    {"name": "avatar",        "dataType": "STRING"},
+    {"name": "deleted",       "dataType": "BOOLEAN"}
+  ],
+  "dateTimeFieldSpecs": [
+    {
+      "name": "created_at",
+      "dataType": "LONG",
+      "format": "1:MILLISECONDS:EPOCH",
+      "granularity": "1:MILLISECONDS"
+    }
+  ],
+  "primaryKeyColumns": ["user_id"]
+}

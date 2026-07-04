@@ -1,0 +1,17 @@
+{
+  "schemaName": "fact_api_keys",
+  "dimensionFieldSpecs": [
+    {"name": "key_id", "dataType": "STRING"},
+    {"name": "partner_id", "dataType": "STRING"},
+    {"name": "key_hash", "dataType": "STRING"},
+    {"name": "key_prefix", "dataType": "STRING"},
+    {"name": "scopes", "dataType": "STRING"},
+    {"name": "expires_at", "dataType": "LONG"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [{"name": "rate_limit", "dataType": "INT"}],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["key_id"]
+}

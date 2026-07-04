@@ -1,0 +1,15 @@
+{
+  "schemaName": "fact_review_votes",
+  "dimensionFieldSpecs": [
+    {"name": "vote_id", "dataType": "STRING"},
+    {"name": "review_id", "dataType": "STRING"},
+    {"name": "voter_id", "dataType": "STRING"},
+    {"name": "helpful", "dataType": "BOOLEAN"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["vote_id"]
+}

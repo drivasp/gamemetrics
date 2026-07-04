@@ -1,0 +1,18 @@
+{
+  "schemaName": "fact_promotions",
+  "dimensionFieldSpecs": [
+    {"name": "promo_id",   "dataType": "STRING"},
+    {"name": "name",       "dataType": "STRING"},
+    {"name": "product_id", "dataType": "STRING"},
+    {"name": "active",     "dataType": "BOOLEAN"},
+    {"name": "deleted",    "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "discount_pct", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "start_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"},
+    {"name": "end_at",   "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["promo_id"]
+}

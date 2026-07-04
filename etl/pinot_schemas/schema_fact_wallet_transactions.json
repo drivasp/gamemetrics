@@ -1,0 +1,18 @@
+{
+  "schemaName": "fact_wallet_transactions",
+  "dimensionFieldSpecs": [
+    {"name": "tx_id", "dataType": "STRING"},
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "tx_type", "dataType": "STRING"},
+    {"name": "idempotency_key", "dataType": "STRING"},
+    {"name": "reference_id", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "amount", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["tx_id"]
+}

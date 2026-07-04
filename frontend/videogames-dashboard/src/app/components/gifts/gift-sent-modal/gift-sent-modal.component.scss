@@ -1,0 +1,137 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+}
+
+.steam-modal {
+  width: min(560px, 94vw);
+  background: linear-gradient(180deg, #1b2838 0%, #171a21 100%);
+  border: 1px solid #3d5a73;
+  border-radius: 4px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.65);
+  color: #c7d5e0;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: rgba(102, 192, 244, 0.08);
+  border-bottom: 1px solid #2a475e;
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+  }
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  color: #8f98a0;
+  font-size: 1.1rem;
+  cursor: pointer;
+  &:hover { color: #fff; }
+}
+
+.modal-body {
+  padding: 16px 18px;
+}
+
+.lead {
+  margin: 0 0 14px;
+  font-size: 0.88rem;
+  color: #a4d7f5;
+  line-height: 1.45;
+}
+
+.item-row {
+  display: grid;
+  grid-template-columns: 116px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid #2a475e;
+  border-radius: 3px;
+}
+
+.thumb {
+  width: 116px;
+  height: 65px;
+  object-fit: cover;
+  border-radius: 2px;
+
+  &.ph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0e141b;
+    font-size: 1.6rem;
+  }
+}
+
+.item-info h3 {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  color: #fff;
+}
+
+.sub {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #8f98a0;
+  strong { color: #66c0f4; }
+}
+
+.msg {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: #beee11;
+}
+
+.item-price .final {
+  font-size: 0.95rem;
+  color: #beee11;
+  font-weight: 700;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px 18px;
+  justify-content: flex-end;
+}
+
+.btn-secondary,
+.btn-primary {
+  border: none;
+  border-radius: 2px;
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background: #2a475e;
+  color: #fff;
+  &:hover { background: #3d6a8f; }
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, #06bfff 0%, #2d73ff 100%);
+  color: #fff;
+  font-weight: 600;
+  &:hover { filter: brightness(1.08); }
+}

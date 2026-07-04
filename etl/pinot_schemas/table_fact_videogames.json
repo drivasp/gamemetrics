@@ -1,0 +1,14 @@
+{
+  "tableName": "fact_videogames",
+  "tableType": "OFFLINE",
+  "segmentsConfig": {
+    "replication": "1",
+    "timeColumnName": "released_ts",
+    "timeType": "SECONDS"
+  },
+  "tableIndexConfig": {
+    "loadMode": "MMAP"
+  },
+  "tenants": {},
+  "metadata": {}
+}

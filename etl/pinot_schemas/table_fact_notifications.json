@@ -1,0 +1,25 @@
+{
+  "tableName": "fact_notifications",
+  "tableType": "REALTIME",
+  "segmentsConfig": {"timeColumnName": "created_at", "timeType": "MILLISECONDS", "replication": "1", "replicasPerPartition": "1"},
+  "tableIndexConfig": {
+    "loadMode": "MMAP",
+    "invertedIndexColumns": ["user_id", "read", "deleted"],
+    "streamConfigs": {
+      "streamType": "kafka",
+      "stream.kafka.consumer.type": "lowlevel",
+      "stream.kafka.topic.name": "fact_notifications",
+      "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder",
+      "stream.kafka.consumer.factory.class.name": "org.apache.pinot.plugin.stream.kafka20.KafkaConsumerFactory",
+      "stream.kafka.broker.list": "kafka:9092",
+      "realtime.segment.flush.threshold.rows": "0",
+      "realtime.segment.flush.threshold.time": "24h",
+      "realtime.segment.flush.desired.size": "50M",
+      "stream.kafka.consumer.prop.auto.offset.reset": "smallest"
+    }
+  },
+  "upsertConfig": {"mode": "FULL", "deleteRecordColumn": "deleted"},
+  "routing": {"instanceSelectorType": "strictReplicaGroup"},
+  "tenants": {},
+  "metadata": {}
+}

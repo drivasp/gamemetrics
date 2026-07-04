@@ -1,0 +1,14 @@
+{
+  "schemaName": "fact_search_queries",
+  "dimensionFieldSpecs": [
+    {"name": "query_id", "dataType": "STRING"},
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "query_text", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [{"name": "results_count", "dataType": "INT"}],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["query_id"]
+}

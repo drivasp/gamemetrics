@@ -1,0 +1,85 @@
+<div class="partner-page">
+  <header>
+    <a routerLink="/store" class="back">← Tienda</a>
+    <h1>Publisher Partner</h1>
+    <p class="sub">Panel B2B · ingresos y juegos publicados</p>
+  </header>
+
+  <div *ngIf="loading" class="state">Cargando...</div>
+
+  <section *ngIf="!loading && !partner" class="register-card">
+    <h2>Activa tu cuenta publisher</h2>
+    <p>Publica juegos y consulta ingresos estimados (revenue share 70%).</p>
+    <input [(ngModel)]="company" placeholder="Nombre de la compañía">
+    <button (click)="register()">Registrar publisher</button>
+    <p class="err" *ngIf="error">{{ error }}</p>
+  </section>
+
+  <ng-container *ngIf="!loading && partner">
+    <div class="stats">
+      <div class="stat">
+        <span>Compañía</span>
+        <strong>{{ partner.company_name }}</strong>
+      </div>
+      <div class="stat">
+        <span>Revenue share</span>
+        <strong>{{ partner.revenue_share_pct }}%</strong>
+      </div>
+      <div class="stat">
+        <span>Ingresos brutos</span>
+        <strong class="green">{{ totalRevenue() | currency:'USD':'symbol':'1.2-2' }}</strong>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Añadir juego al catálogo partner</h2>
+        <input [(ngModel)]="gameName" placeholder="Nombre del juego">
+        <input [(ngModel)]="productId" placeholder="product_id (de la tienda)">
+        <button (click)="addGame()">Publicar juego</button>
+        <p class="ok" *ngIf="message">{{ message }}</p>
+        <p class="err" *ngIf="error">{{ error }}</p>
+      </section>
+
+      <section class="card">
+        <h2>Juegos publicados</h2>
+        <article *ngFor="let g of games" class="row">
+          <div>
+            <strong>{{ g.game_name }}</strong>
+            <p>{{ g.submission_status }} · {{ g.product_id }}</p>
+          </div>
+        </article>
+        <p class="empty" *ngIf="!games.length">Sin juegos todavía.</p>
+      </section>
+
+      <section class="card wide">
+        <h2>Snapshots de ingresos</h2>
+        <article *ngFor="let r of revenue" class="row">
+          <div>
+            <strong>{{ r.game_name }}</strong>
+            <p>{{ r.units_sold }} unidades</p>
+          </div>
+          <span class="green">{{ r.gross_revenue | currency:'USD':'symbol':'1.2-2' }}</span>
+        </article>
+        <p class="empty" *ngIf="!revenue.length">Sin datos de ingresos.</p>
+      </section>
+
+      <section class="card wide">
+        <h2>API Keys B2B</h2>
+        <button (click)="createKey()">Generar nueva clave</button>
+        <div class="key-reveal" *ngIf="newApiKey">
+          <strong>Clave (cópiala ahora):</strong>
+          <code>{{ newApiKey }}</code>
+        </div>
+        <article *ngFor="let k of apiKeys" class="row">
+          <div>
+            <strong>{{ k.key_prefix }}</strong>
+            <p>{{ k.scopes }} · límite {{ k.rate_limit }}/h</p>
+          </div>
+          <button class="revoke" (click)="revokeKey(k.key_id)">Revocar</button>
+        </article>
+        <p class="empty" *ngIf="!apiKeys.length">Sin claves API.</p>
+      </section>
+    </div>
+  </ng-container>
+</div>

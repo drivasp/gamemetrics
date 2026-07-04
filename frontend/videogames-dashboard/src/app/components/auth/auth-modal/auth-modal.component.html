@@ -1,0 +1,104 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onOverlayClick($event)">
+  <div class="modal-card">
+
+    <!-- Header -->
+    <div class="modal-header">
+      <span class="modal-logo">🎮 <strong>GameMetrics</strong> Store</span>
+      <button class="btn-close" (click)="close()">✕</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="modal-tabs">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'login'"
+        (click)="setTab('login')">
+        Iniciar Sesión
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'register'"
+        (click)="setTab('register')">
+        Registrarse
+      </button>
+    </div>
+
+    <!-- Login form -->
+    <form *ngIf="activeTab === 'login'" (ngSubmit)="login()" class="modal-form">
+      <div class="form-group">
+        <label>Email</label>
+        <input
+          type="email"
+          [(ngModel)]="loginEmail"
+          name="loginEmail"
+          placeholder="tu@email.com"
+          autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input
+          type="password"
+          [(ngModel)]="loginPassword"
+          name="loginPassword"
+          placeholder="••••••••"
+          autocomplete="current-password">
+      </div>
+
+      <div class="error-msg" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+      <button type="submit" class="btn-primary" [disabled]="loading">
+        <span *ngIf="!loading">Iniciar Sesión</span>
+        <span *ngIf="loading" class="spinner-inline"></span>
+      </button>
+
+      <p class="forgot-link">¿Olvidaste tu contraseña?</p>
+    </form>
+
+    <!-- Register form -->
+    <form *ngIf="activeTab === 'register'" (ngSubmit)="register()" class="modal-form">
+      <div class="form-group">
+        <label>Nombre de usuario</label>
+        <input
+          type="text"
+          [(ngModel)]="regDisplayName"
+          name="regDisplayName"
+          placeholder="Tu nombre">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input
+          type="email"
+          [(ngModel)]="regEmail"
+          name="regEmail"
+          placeholder="tu@email.com"
+          autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input
+          type="password"
+          [(ngModel)]="regPassword"
+          name="regPassword"
+          placeholder="Mínimo 8 caracteres"
+          autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label>Confirmar contraseña</label>
+        <input
+          type="password"
+          [(ngModel)]="regPasswordConfirm"
+          name="regPasswordConfirm"
+          placeholder="Repite tu contraseña"
+          autocomplete="new-password">
+      </div>
+
+      <div class="error-msg" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+      <button type="submit" class="btn-primary" [disabled]="loading">
+        <span *ngIf="!loading">Crear cuenta</span>
+        <span *ngIf="loading" class="spinner-inline"></span>
+      </button>
+    </form>
+
+  </div>
+</div>

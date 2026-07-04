@@ -1,0 +1,84 @@
+<div class="store-home steam-theme">
+
+  <div *ngIf="loading" class="loading-full">
+    <div class="spinner"></div>
+    <p>Cargando GameMetrics Store...</p>
+  </div>
+
+  <ng-container *ngIf="!loading">
+
+    <!-- Spotlight carousel estilo Steam -->
+    <section class="spotlight" *ngIf="featured.length > 0">
+      <button class="spot-arrow left" (click)="prevSpot()" *ngIf="featured.length > 1">‹</button>
+      <div class="spot-track">
+        <article
+          class="spot-card"
+          *ngFor="let g of visibleFeatured; let i = index"
+          [class.active]="i === 1 || visibleFeatured.length === 1"
+          (mouseenter)="setSpotHover(g.slug)"
+          (mouseleave)="clearSpotHover()"
+          (click)="goToDetail(g.slug)">
+          <video
+            *ngIf="g.trailer_url && spotHoverSlug === g.slug"
+            class="spot-video"
+            [src]="g.trailer_url"
+            autoplay muted loop playsinline>
+          </video>
+          <img
+            *ngIf="g.background_image && (!g.trailer_url || spotHoverSlug !== g.slug)"
+            [src]="g.background_image" [alt]="g.name">
+          <div class="spot-info">
+            <h3>{{ g.name }}</h3>
+            <div class="spot-price">
+              <span class="disc" *ngIf="g.discount_pct && g.discount_pct > 0">-{{ g.discount_pct }}%</span>
+              <span class="orig" *ngIf="g.original_price">${{ g.original_price!.toFixed(2) }}</span>
+              <span class="final">{{ g.is_free ? 'GRATIS' : ('$' + g.price.toFixed(2)) }}</span>
+            </div>
+          </div>
+        </article>
+      </div>
+      <button class="spot-arrow right" (click)="nextSpot()" *ngIf="featured.length > 1">›</button>
+      <div class="spot-dots" *ngIf="featured.length > 1">
+        <button
+          *ngFor="let g of featured; let i = index"
+          class="dot" [class.active]="i === spotIndex"
+          (click)="setSpot(i)">
+        </button>
+      </div>
+    </section>
+
+    <section class="section" *ngIf="featured.length > 0">
+      <div class="section-header">
+        <h2 class="section-title">Destacados y recomendados</h2>
+      </div>
+      <div class="featured-grid">
+        <app-game-card *ngFor="let g of featured | slice:0:8" [game]="g" class="featured-card"></app-game-card>
+      </div>
+    </section>
+
+    <section class="section" *ngIf="popular.length > 0">
+      <div class="section-header">
+        <h2 class="section-title">Más populares</h2>
+        <button class="btn-link" (click)="goToCatalog()">Ver todos →</button>
+      </div>
+      <div class="popular-scroll">
+        <app-game-card *ngFor="let g of popular" [game]="g" class="popular-card"></app-game-card>
+      </div>
+    </section>
+
+    <section class="section free-section" *ngIf="freeGames.length > 0">
+      <div class="section-header">
+        <h2 class="section-title">Gratis para jugar</h2>
+        <button class="btn-link" (click)="goToCatalog('free')">Ver todos →</button>
+      </div>
+      <div class="cards-grid">
+        <app-game-card *ngFor="let g of freeGames" [game]="g"></app-game-card>
+      </div>
+    </section>
+
+    <div class="cta-wrap">
+      <button class="btn-catalog" (click)="goToCatalog()">Explorar catálogo completo</button>
+    </div>
+
+  </ng-container>
+</div>

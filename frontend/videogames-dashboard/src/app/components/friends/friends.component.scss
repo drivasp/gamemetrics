@@ -1,0 +1,61 @@
+.friends-page {
+  min-height: 80vh; background: #1b2838; color: #c7d5e0;
+  padding: 28px 40px 60px; max-width: 900px;
+}
+header { margin-bottom: 18px;
+  h1 { margin: 8px 0 4px; color: #fff; }
+  .sub { margin: 0; color: #8f98a0; }
+  .back { color: #66c0f4; text-decoration: none; }
+}
+.add-box {
+  background: rgba(0,0,0,0.22); border: 1px solid #2a475e; border-radius: 4px;
+  padding: 14px; margin-bottom: 16px;
+  h3 { margin: 0 0 10px; color: #fff; font-size: 0.9rem; }
+  .row { display: flex; gap: 8px; }
+  input {
+    flex: 1; background: #16202d; border: 1px solid #2a475e; color: #fff;
+    padding: 10px; border-radius: 2px;
+  }
+  button {
+    background: linear-gradient(90deg, #06bfff, #2d73ff); border: none; color: #fff;
+    font-weight: 700; padding: 10px 14px; border-radius: 2px; cursor: pointer;
+  }
+}
+.tabs {
+  display: flex; gap: 8px; margin-bottom: 16px;
+  button {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: transparent; border: 1px solid #2a475e; color: #8f98a0;
+    padding: 8px 14px; cursor: pointer; border-radius: 2px;
+    &.active { color: #fff; border-color: #66c0f4; background: rgba(102,192,244,0.12); }
+  }
+  .badge { background: #c45500; color: #fff; font-size: 0.7rem; padding: 1px 6px; border-radius: 10px; }
+}
+.card, .activity {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(0,0,0,0.22); border: 1px solid #2a475e; border-radius: 4px;
+  padding: 12px; margin-bottom: 8px;
+  h3 { margin: 0 0 2px; color: #fff; font-size: 0.95rem; }
+  p { margin: 0; color: #8f98a0; font-size: 0.8rem; }
+}
+.grow { flex: 1; }
+.avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(135deg, #1b8fd6, #0f3460);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800;
+  &.sm { width: 32px; height: 32px; font-size: 0.8rem; }
+}
+.accept {
+  background: #75b022; border: none; color: #fff; font-weight: 700;
+  padding: 7px 12px; border-radius: 2px; cursor: pointer;
+}
+.decline {
+  background: #3d2a2a; border: none; color: #ff9b9b;
+  padding: 7px 12px; border-radius: 2px; cursor: pointer;
+}
+.sec { color: #8f98a0; font-size: 0.8rem; text-transform: uppercase; margin: 16px 0 8px; }
+.empty, .state { color: #8f98a0; padding: 16px 0; }
+.ok { color: #beee11; font-size: 0.85rem; }
+.err { color: #ff6b6b; font-size: 0.85rem; }
+.activity strong { color: #66c0f4; }

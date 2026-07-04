@@ -1,0 +1,92 @@
+# ── Secretos y entorno ──────────────────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+backend/.env
+
+# ── Python ──────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.cover
+
+# ── Node / Angular ──────────────────────────────────────────
+node_modules/
+frontend/**/node_modules/
+frontend/**/dist/
+frontend/**/.angular/cache/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Java / Maven (artefactos legacy en backend/) ────────────
+backend/target/
+backend/src/
+*.class
+*.jar
+*.war
+
+# ── Datos ETL (voluminosos — no versionar) ──────────────────
+etl/data/raw/
+etl/data/processed/
+etl/data/agg/
+etl/data/stage/*.parquet
+etl/data/stage/*.csv
+etl/data/stage/segments/
+etl/data/stage/csv_segments/
+etl/data/stage/json_segments/
+
+# Mantener marcadores de bootstrap y schemas Pinot
+!etl/data/stage/*_bootstrapped.json
+!etl/data/stage/semanas_cargadas.json
+!etl/pinot_schemas/
+
+# ── PocketBase (legacy — eliminado del flujo activo) ─────────
+pocketbase/
+pocketbase.exe
+
+# ── Archivos generados en runtime ───────────────────────────
+logs/
+*.log
+backend/static/avatars/*
+!backend/static/avatars/.gitkeep
+
+# ── Docker / volúmenes locales ──────────────────────────────
+docker-data/
+
+# ── IDE y sistema operativo ─────────────────────────────────
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── Cursor / Claude (config local) ──────────────────────────
+.claude/settings.local.json
+
+# ── Binarios y temporales ───────────────────────────────────
+*.exe
+*.dll
+*.zip
+*.tar.gz
+tmp/
+temp/

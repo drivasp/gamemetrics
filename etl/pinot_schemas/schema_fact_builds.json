@@ -1,0 +1,19 @@
+{
+  "schemaName": "fact_builds",
+  "dimensionFieldSpecs": [
+    {"name": "build_id", "dataType": "STRING"},
+    {"name": "product_id", "dataType": "STRING"},
+    {"name": "version", "dataType": "STRING"},
+    {"name": "os", "dataType": "STRING"},
+    {"name": "file_path", "dataType": "STRING"},
+    {"name": "checksum", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "file_size_bytes", "dataType": "LONG"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["build_id"]
+}

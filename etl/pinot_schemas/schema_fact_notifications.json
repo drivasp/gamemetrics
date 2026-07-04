@@ -1,0 +1,17 @@
+{
+  "schemaName": "fact_notifications",
+  "dimensionFieldSpecs": [
+    {"name": "notification_id", "dataType": "STRING"},
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "type", "dataType": "STRING"},
+    {"name": "title", "dataType": "STRING"},
+    {"name": "body", "dataType": "STRING"},
+    {"name": "read", "dataType": "BOOLEAN"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["notification_id"]
+}

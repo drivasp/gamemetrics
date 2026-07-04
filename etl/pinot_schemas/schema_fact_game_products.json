@@ -1,0 +1,14 @@
+{
+  "schemaName": "fact_game_products",
+  "dimensionFieldSpecs": [
+    {"name": "product_id",       "dataType": "STRING"},
+    {"name": "parent_game_id", "dataType": "STRING"},
+    {"name": "slug",             "dataType": "STRING"},
+    {"name": "name",             "dataType": "STRING"},
+    {"name": "product_type",     "dataType": "STRING"},
+    {"name": "platform_targets", "dataType": "STRING"},
+    {"name": "released",         "dataType": "STRING"},
+    {"name": "semana",           "dataType": "INT"}
+  ],
+  "metricFieldSpecs": []
+}

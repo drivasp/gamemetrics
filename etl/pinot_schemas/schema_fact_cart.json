@@ -1,0 +1,20 @@
+{
+  "schemaName": "fact_cart",
+  "dimensionFieldSpecs": [
+    {"name": "cart_item_id", "dataType": "STRING"},
+    {"name": "user_id",      "dataType": "STRING"},
+    {"name": "product_id",   "dataType": "STRING"},
+    {"name": "game_slug",    "dataType": "STRING"},
+    {"name": "game_name",    "dataType": "STRING"},
+    {"name": "game_image",   "dataType": "STRING"},
+    {"name": "deleted",      "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "unit_price", "dataType": "DOUBLE"},
+    {"name": "quantity",   "dataType": "INT"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "added_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["cart_item_id"]
+}

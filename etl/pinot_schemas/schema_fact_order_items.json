@@ -1,0 +1,19 @@
+{
+  "schemaName": "fact_order_items",
+  "dimensionFieldSpecs": [
+    {"name": "order_item_id", "dataType": "STRING"},
+    {"name": "order_id",      "dataType": "STRING"},
+    {"name": "product_id",    "dataType": "STRING"},
+    {"name": "product_slug",  "dataType": "STRING"},
+    {"name": "product_name",  "dataType": "STRING"},
+    {"name": "deleted",       "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "unit_price", "dataType": "DOUBLE"},
+    {"name": "quantity",   "dataType": "INT"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["order_item_id"]
+}

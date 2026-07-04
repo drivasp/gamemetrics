@@ -1,0 +1,16 @@
+{
+  "schemaName": "fact_user_sanctions",
+  "dimensionFieldSpecs": [
+    {"name": "sanction_id", "dataType": "STRING"},
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "sanction_type", "dataType": "STRING"},
+    {"name": "reason", "dataType": "STRING"},
+    {"name": "expires_at", "dataType": "LONG"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["sanction_id"]
+}

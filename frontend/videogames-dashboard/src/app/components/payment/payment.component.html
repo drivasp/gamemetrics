@@ -1,0 +1,103 @@
+<div class="payment-page">
+  <div *ngIf="loading" class="state">Cargando resumen de pago...</div>
+
+  <ng-container *ngIf="!loading && cart">
+    <header class="pay-header">
+      <button class="back" (click)="back()">← Volver al carrito</button>
+      <h1>Continuar al pago</h1>
+      <p class="sub">Pago seguro estilo Steam · GameMetrics Store</p>
+    </header>
+
+    <div class="pay-layout">
+      <section class="items">
+        <h2>Tu carrito</h2>
+        <article class="pay-row" *ngFor="let item of cart.items">
+          <img *ngIf="item.game_image" [src]="item.game_image" [alt]="item.game_name">
+          <div class="meta">
+            <h3>{{ item.game_name }}</h3>
+            <p>Para mi cuenta · Windows</p>
+          </div>
+          <div class="price">{{ item.line_total | currency:'USD':'symbol':'1.2-2' }}</div>
+        </article>
+
+        <div class="coupon-box">
+          <h3>Cupón de descuento</h3>
+          <div class="coupon-row">
+            <input
+              type="text"
+              [(ngModel)]="couponCode"
+              placeholder="STEAM10, GAME20, WELCOME5..."
+              [disabled]="couponApplied > 0"
+              (keyup.enter)="applyCoupon()">
+            <button *ngIf="couponApplied === 0" class="btn-coupon" (click)="applyCoupon()">Aplicar</button>
+            <button *ngIf="couponApplied > 0" class="btn-coupon clear" (click)="clearCoupon()">Quitar</button>
+          </div>
+          <p class="ok" *ngIf="couponMessage">{{ couponMessage }}</p>
+          <p class="err" *ngIf="couponError">{{ couponError }}</p>
+        </div>
+      </section>
+
+      <aside class="summary">
+        <h2>Total estimado</h2>
+        <div class="line">
+          <span>Subtotal</span>
+          <span>{{ subtotal | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+        <div class="line" *ngIf="cart.discount_total > 0">
+          <span>Descuentos tienda</span>
+          <span class="green">-{{ cart.discount_total | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+        <div class="line" *ngIf="couponApplied > 0">
+          <span>Cupón {{ couponCode }}</span>
+          <span class="green">-{{ couponApplied | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+        <div class="line total">
+          <span>Total a pagar</span>
+          <span>{{ finalTotal | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+
+        <div class="pay-methods">
+          <h3>Método de pago</h3>
+          <label
+            class="method"
+            [class.active]="paymentMethod === 'wallet'"
+            [class.disabled]="!walletCanPay">
+            <input
+              type="radio"
+              name="pm"
+              value="wallet"
+              [(ngModel)]="paymentMethod"
+              [disabled]="!walletCanPay">
+            <div>
+              <strong>Cartera GameMetrics</strong>
+              <span>Saldo: {{ walletBalance | currency:'USD':'symbol':'1.2-2' }}</span>
+              <span class="warn" *ngIf="!walletCanPay">
+                Te faltan {{ walletMissing | currency:'USD':'symbol':'1.2-2' }} — recarga o usa otro método
+              </span>
+            </div>
+          </label>
+          <label class="method" [class.active]="paymentMethod === 'sandbox'">
+            <input type="radio" name="pm" value="sandbox" [(ngModel)]="paymentMethod">
+            <div>
+              <strong>Pago inmediato (sandbox)</strong>
+              <span>Completa la compra sin usar la cartera</span>
+            </div>
+          </label>
+          <a class="topup-link" routerLink="/my-wallet" *ngIf="!walletCanPay">
+            Recargar cartera (necesitas al menos {{ finalTotal | currency:'USD':'symbol':'1.2-2' }}) →
+          </a>
+        </div>
+
+        <p class="legal">
+          Al completar la compra aceptas la licencia digital de GameMetrics.
+          Los juegos se activan en tu biblioteca al confirmar el pago.
+        </p>
+        <button class="btn-pay" [disabled]="payDisabled" (click)="pay()">
+          {{ paying ? 'Procesando...' : (paymentMethod === 'wallet' ? 'Pagar con cartera' : 'Completar compra') }}
+        </button>
+        <p class="msg ok" *ngIf="message">{{ message }}</p>
+        <p class="msg err" *ngIf="error">{{ error }}</p>
+      </aside>
+    </div>
+  </ng-container>
+</div>

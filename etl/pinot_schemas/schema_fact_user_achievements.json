@@ -1,0 +1,15 @@
+{
+  "schemaName": "fact_user_achievements",
+  "dimensionFieldSpecs": [
+    {"name": "user_achievement_id", "dataType": "STRING"},
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "achievement_id", "dataType": "STRING"},
+    {"name": "product_id", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [],
+  "dateTimeFieldSpecs": [
+    {"name": "unlocked_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["user_achievement_id"]
+}

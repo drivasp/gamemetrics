@@ -1,0 +1,20 @@
+{
+  "schemaName": "fact_revenue_snapshots",
+  "dimensionFieldSpecs": [
+    {"name": "snapshot_id", "dataType": "STRING"},
+    {"name": "partner_id", "dataType": "STRING"},
+    {"name": "product_id", "dataType": "STRING"},
+    {"name": "game_name", "dataType": "STRING"},
+    {"name": "period_start", "dataType": "LONG"},
+    {"name": "period_end", "dataType": "LONG"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "units_sold", "dataType": "INT"},
+    {"name": "gross_revenue", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["snapshot_id"]
+}

@@ -1,0 +1,18 @@
+{
+  "schemaName": "fact_family_shares",
+  "dimensionFieldSpecs": [
+    {"name": "share_id", "dataType": "STRING"},
+    {"name": "group_id", "dataType": "STRING"},
+    {"name": "purchase_id", "dataType": "STRING"},
+    {"name": "game_name", "dataType": "STRING"},
+    {"name": "shared_by", "dataType": "STRING"},
+    {"name": "shared_with", "dataType": "STRING"},
+    {"name": "share_type", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["share_id"]
+}

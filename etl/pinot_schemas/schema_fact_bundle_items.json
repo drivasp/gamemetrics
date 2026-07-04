@@ -1,0 +1,10 @@
+{
+  "schemaName": "fact_bundle_items",
+  "dimensionFieldSpecs": [
+    {"name": "bundle_item_id", "dataType": "STRING"},
+    {"name": "bundle_id",      "dataType": "STRING"},
+    {"name": "product_id",     "dataType": "STRING"},
+    {"name": "semana",         "dataType": "INT"}
+  ],
+  "metricFieldSpecs": []
+}

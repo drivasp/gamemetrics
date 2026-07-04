@@ -1,0 +1,42 @@
+.support-page {
+  min-height: 80vh; background: #1b2838; color: #c7d5e0;
+  padding: 28px 40px 60px;
+}
+header { margin-bottom: 18px;
+  h1 { margin: 8px 0 4px; color: #fff; }
+  .sub { margin: 0; color: #8f98a0; }
+  .back { color: #66c0f4; text-decoration: none; }
+}
+.layout {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+  max-width: 1100px;
+  @media (max-width: 900px) { grid-template-columns: 1fr; }
+}
+.form-card, .list-card {
+  background: rgba(0,0,0,0.22); border: 1px solid #2a475e; border-radius: 4px; padding: 16px;
+  h2 { margin: 0 0 12px; color: #fff; font-size: 0.95rem; }
+}
+label { display: block; color: #8f98a0; font-size: 0.78rem; margin: 8px 0 4px; }
+input, select, textarea {
+  width: 100%; box-sizing: border-box;
+  background: #16202d; border: 1px solid #2a475e; color: #fff;
+  padding: 10px; border-radius: 2px;
+}
+button {
+  margin-top: 12px; width: 100%;
+  background: linear-gradient(90deg, #06bfff, #2d73ff);
+  border: none; color: #fff; font-weight: 700; padding: 11px; border-radius: 2px; cursor: pointer;
+}
+.ticket {
+  border: 1px solid #2a475e; border-radius: 3px; padding: 12px; margin-bottom: 8px;
+  &.closed { opacity: 0.55; }
+  .top { display: flex; justify-content: space-between; gap: 8px; }
+  h3 { margin: 0; color: #fff; font-size: 0.9rem; }
+  p { margin: 8px 0 0; color: #a0aab4; font-size: 0.84rem; }
+  .status { color: #beee11; font-size: 0.75rem; font-weight: 700; }
+  .actions button {
+    width: auto; margin-top: 8px; background: #2a475e; padding: 6px 12px; font-size: 0.78rem;
+  }
+}
+.ok { color: #beee11; } .err { color: #ff6b6b; }
+.empty, .state { color: #8f98a0; }

@@ -1,0 +1,16 @@
+{
+  "schemaName": "fact_download_tokens",
+  "dimensionFieldSpecs": [
+    {"name": "token_id", "dataType": "STRING"},
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "build_id", "dataType": "STRING"},
+    {"name": "used", "dataType": "BOOLEAN"},
+    {"name": "expires_at", "dataType": "LONG"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["token_id"]
+}

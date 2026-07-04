@@ -1,0 +1,59 @@
+<div class="games-container">
+  <h2>Games Catalog</h2>
+
+  <mat-form-field appearance="outline" class="search-field">
+    <mat-label>Search by name</mat-label>
+    <input matInput [(ngModel)]="searchTerm" (ngModelChange)="applyFilter()" placeholder="Type to filter...">
+  </mat-form-field>
+
+  <div class="table-wrapper">
+    <table mat-table [dataSource]="filteredGames" class="games-table">
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let game">{{ game.name }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="released">
+        <th mat-header-cell *matHeaderCellDef>Released</th>
+        <td mat-cell *matCellDef="let game">{{ game.released }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="rating">
+        <th mat-header-cell *matHeaderCellDef>Rating</th>
+        <td mat-cell *matCellDef="let game">{{ game.rating }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="metacritic">
+        <th mat-header-cell *matHeaderCellDef>Metacritic</th>
+        <td mat-cell *matCellDef="let game">{{ game.metacritic }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="genres">
+        <th mat-header-cell *matHeaderCellDef>Genres</th>
+        <td mat-cell *matCellDef="let game">{{ game.genres }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="platforms">
+        <th mat-header-cell *matHeaderCellDef>Platforms</th>
+        <td mat-cell *matCellDef="let game">{{ game.platforms }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="esrbRating">
+        <th mat-header-cell *matHeaderCellDef>ESRB</th>
+        <td mat-cell *matCellDef="let game">{{ game.esrbRating }}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+  </div>
+
+  <mat-paginator
+    [length]="totalGames"
+    [pageSize]="pageSize"
+    [pageIndex]="pageIndex"
+    [pageSizeOptions]="[10, 20, 50, 100]"
+    (page)="onPageChange($event)"
+    showFirstLastButtons>
+  </mat-paginator>
+</div>

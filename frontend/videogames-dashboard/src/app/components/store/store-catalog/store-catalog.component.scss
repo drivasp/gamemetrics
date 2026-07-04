@@ -1,0 +1,132 @@
+:host { display: block; background: #0f0f0f; min-height: 100vh; color: #fff; }
+
+.catalog-layout { display: flex; min-height: 100vh; }
+
+// ── Sidebar ────────────────────────────────────────────────────────────────────
+
+.sidebar {
+  width: 270px; flex-shrink: 0;
+  background: #0a0a14; border-right: 1px solid #1a1a2e;
+  padding: 28px 18px; overflow-y: auto;
+
+  @media (max-width: 900px) { display: none; }
+}
+
+.filter-group { margin-bottom: 24px; }
+
+.filter-label {
+  display: block; font-size: 0.72rem; color: #a0a0b0;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  font-weight: 700; margin-bottom: 10px;
+}
+
+.search-input, .filter-select {
+  width: 100%; background: #16213e; border: 1px solid #0f3460;
+  color: #fff; padding: 9px 12px; border-radius: 6px;
+  font-size: 0.85rem; outline: none; box-sizing: border-box;
+  transition: border-color 0.2s;
+
+  &:focus { border-color: #e94560; }
+  option { background: #16213e; }
+}
+
+// ── Checkbox list ──────────────────────────────────────────────────────────────
+
+.checkbox-list {
+  display: flex; flex-direction: column; gap: 4px;
+
+  &.scrollable { max-height: 220px; overflow-y: auto;
+    scrollbar-width: thin; scrollbar-color: #0f3460 transparent;
+    &::-webkit-scrollbar { width: 4px; }
+    &::-webkit-scrollbar-thumb { background: #0f3460; border-radius: 2px; }
+  }
+}
+
+.check-item {
+  display: flex; align-items: center; gap: 9px;
+  background: none; border: none; color: #a0a0b0;
+  font-size: 0.82rem; cursor: pointer; padding: 5px 6px;
+  border-radius: 4px; text-align: left; width: 100%;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover { color: #fff; background: rgba(233,69,96,0.08); }
+
+  &.active { color: #fff; }
+}
+
+.check-box {
+  width: 16px; height: 16px; border: 1.5px solid #0f3460;
+  border-radius: 3px; display: flex; align-items: center;
+  justify-content: center; font-size: 0.6rem; flex-shrink: 0;
+  color: transparent; background: transparent;
+  transition: border-color 0.15s, background 0.15s;
+
+  &.checked {
+    background: #e94560; border-color: #e94560; color: #fff;
+  }
+}
+
+.btn-clear {
+  background: transparent; border: 1px solid #1a1a2e;
+  color: #a0a0b0; padding: 8px 14px; border-radius: 6px;
+  font-size: 0.82rem; cursor: pointer; width: 100%;
+  margin-top: 8px; transition: color 0.2s, border-color 0.2s;
+
+  &:hover { color: #fff; border-color: #a0a0b0; }
+}
+
+// ── Main ───────────────────────────────────────────────────────────────────────
+
+.catalog-main {
+  flex: 1; padding: 28px 32px 60px; min-width: 0;
+
+  @media (max-width: 768px) { padding: 20px 16px 40px; }
+}
+
+.catalog-bar { margin-bottom: 18px; }
+
+.showing-count { font-size: 0.82rem; color: #a0a0b0; }
+
+// ── Loading / Empty ────────────────────────────────────────────────────────────
+
+.loading-state { display: flex; justify-content: center; padding: 70px 0; }
+
+.spinner {
+  width: 38px; height: 38px; border: 3px solid #1a1a2e;
+  border-top-color: #e94560; border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px; padding: 80px 0; color: #a0a0b0;
+  span { font-size: 2.5rem; }
+  p { margin: 0; }
+}
+
+// ── Grid ───────────────────────────────────────────────────────────────────────
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+// ── Pagination ─────────────────────────────────────────────────────────────────
+
+.pagination {
+  display: flex; justify-content: center; align-items: center;
+  gap: 6px; margin-top: 40px;
+}
+
+.page-btn {
+  background: #16213e; border: 1px solid #0f3460; color: #a0a0b0;
+  width: 36px; height: 36px; border-radius: 6px;
+  font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+
+  &.active { background: #e94560; border-color: #e94560; color: #fff; }
+  &:hover:not(.active):not(:disabled) { background: #0f3460; color: #fff; }
+  &:disabled { opacity: 0.3; cursor: default; }
+}

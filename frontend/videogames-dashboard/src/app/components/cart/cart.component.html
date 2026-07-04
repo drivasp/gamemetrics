@@ -1,0 +1,42 @@
+<div class="cart-page">
+  <header class="cart-header">
+    <h1>🛒 Tu carrito</h1>
+    <button class="btn-link" (click)="goStore()">← Seguir comprando</button>
+  </header>
+
+  <div *ngIf="loading" class="state">Cargando carrito...</div>
+
+  <div *ngIf="!loading && cart && cart.items.length === 0" class="state empty">
+    <p>Tu carrito está vacío.</p>
+    <button class="btn-primary" (click)="goStore()">Explorar la tienda</button>
+  </div>
+
+  <div *ngIf="!loading && cart && cart.items.length > 0" class="cart-layout">
+    <section class="cart-items">
+      <article class="cart-row" *ngFor="let item of cart.items">
+        <img *ngIf="item.game_image" [src]="item.game_image" [alt]="item.game_name" class="thumb">
+        <div *ngIf="!item.game_image" class="thumb placeholder">🎮</div>
+        <div class="info">
+          <h3>{{ item.game_name }}</h3>
+          <p class="slug">{{ item.game_slug }}</p>
+        </div>
+        <div class="price">${{ item.line_total.toFixed(2) }}</div>
+        <button class="btn-remove" (click)="remove(item.product_id)" title="Quitar">✕</button>
+      </article>
+    </section>
+
+    <aside class="summary">
+      <h2>Resumen</h2>
+      <div class="row"><span>Subtotal</span><span>${{ cart.subtotal.toFixed(2) }}</span></div>
+      <div class="row" *ngIf="cart.discount_total > 0">
+        <span>Descuento</span><span>-${{ cart.discount_total.toFixed(2) }}</span>
+      </div>
+      <div class="row total"><span>Total</span><span>${{ cart.total.toFixed(2) }} USD</span></div>
+      <p class="note">Pago seguro estilo Steam (sandbox)</p>
+      <button class="btn-checkout" (click)="checkout()">
+        Continuar al pago
+      </button>
+      <p class="msg" *ngIf="message">{{ message }}</p>
+    </aside>
+  </div>
+</div>

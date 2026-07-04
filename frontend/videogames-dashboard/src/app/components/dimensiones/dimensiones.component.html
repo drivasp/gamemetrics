@@ -1,0 +1,106 @@
+<div class="dim-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="section-title">Tablas de Dimensiones</span>
+      <span class="section-sub">Apache Pinot — Solo lectura</span>
+    </div>
+    <nav class="dim-list">
+      @for (d of dims; track d.key) {
+        <button class="dim-item" [class.active]="selected.key === d.key" (click)="loadDim(d)">
+          <span class="dim-icon">{{ d.icon }}</span>
+          <span class="dim-label">{{ d.label }}</span>
+        </button>
+      }
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+
+    <!-- Header -->
+    <div class="content-header">
+      <div class="header-left">
+        <span class="dim-icon-lg">{{ selected.icon }}</span>
+        <div>
+          <h2 class="dim-title">{{ selected.label }}</h2>
+          <p class="dim-desc">{{ selected.desc }}</p>
+        </div>
+      </div>
+      <span class="record-badge">{{ filtered.length }} registros</span>
+    </div>
+
+    <!-- Info banner -->
+    <div class="info-banner">
+      Estas tablas son generadas automáticamente desde <strong>fact_videogames</strong>.
+      Para regenerarlas, usa el botón <em>Crear Dimensiones</em> en el Dashboard.
+    </div>
+
+    <!-- Search -->
+    <div class="search-bar">
+      <input type="text" [(ngModel)]="searchText" placeholder="Buscar..." class="search-input" />
+    </div>
+
+    <!-- Loading -->
+    @if (loading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>Cargando dimensión...</span>
+      </div>
+    }
+
+    <!-- Table -->
+    @if (!loading && filtered.length > 0) {
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              @if (selected.hasEsrb) {
+                <th>Código</th>
+                <th>Edad mínima</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of filtered; track row.dimId) {
+              <tr>
+                <td><span class="id-chip">{{ row.dimId }}</span></td>
+                <td class="nombre-col">{{ row.nombre }}</td>
+                @if (selected.hasEsrb) {
+                  <td><span class="esrb-code">{{ row.codigo }}</span></td>
+                  <td>{{ row.edadMinima }}+</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      @if (!searchText) {
+        <div class="pagination">
+          <button class="page-btn" [disabled]="page === 0" (click)="prevPage()">‹ Anterior</button>
+          <span class="page-info">Página {{ page + 1 }} · {{ pageSize }} por página</span>
+          <button class="page-btn" [disabled]="records.length < pageSize" (click)="nextPage()">Siguiente ›</button>
+        </div>
+      }
+    }
+
+    <!-- Empty -->
+    @if (!loading && filtered.length === 0) {
+      <div class="empty-state">
+        @if (records.length === 0) {
+          <div class="empty-icon">📭</div>
+          <p>No hay datos en esta dimensión.</p>
+          <p class="empty-hint">Ejecuta <strong>Crear Dimensiones</strong> desde el Dashboard para poblarla.</p>
+        } @else {
+          <span>Sin resultados para "{{ searchText }}"</span>
+        }
+      </div>
+    }
+
+  </main>
+</div>

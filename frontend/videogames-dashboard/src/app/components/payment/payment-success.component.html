@@ -1,0 +1,9 @@
+<div class="success-page">
+  <div class="box">
+    <div class="spinner" *ngIf="loading"></div>
+    <h1 *ngIf="!error">{{ loading ? 'Confirmando pago...' : '¡Pago confirmado!' }}</h1>
+    <h1 *ngIf="error">Error en el pago</h1>
+    <p *ngIf="!error">{{ message }}</p>
+    <p class="err" *ngIf="error">{{ error }}</p>
+  </div>
+</div>

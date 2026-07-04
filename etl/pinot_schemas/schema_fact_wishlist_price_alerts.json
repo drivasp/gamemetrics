@@ -1,0 +1,19 @@
+{
+  "schemaName": "fact_wishlist_price_alerts",
+  "dimensionFieldSpecs": [
+    {"name": "alert_id", "dataType": "STRING"},
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "product_id", "dataType": "STRING"},
+    {"name": "game_slug", "dataType": "STRING"},
+    {"name": "game_name", "dataType": "STRING"},
+    {"name": "triggered", "dataType": "BOOLEAN"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "target_price", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["alert_id"]
+}

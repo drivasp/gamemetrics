@@ -1,0 +1,23 @@
+{
+  "schemaName": "fact_wishlist",
+  "dimensionFieldSpecs": [
+    {"name": "wishlist_id", "dataType": "STRING"},
+    {"name": "user_id",     "dataType": "STRING"},
+    {"name": "game_slug",   "dataType": "STRING"},
+    {"name": "game_name",   "dataType": "STRING"},
+    {"name": "game_image",  "dataType": "STRING"},
+    {"name": "deleted",     "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "game_price", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {
+      "name": "created_at",
+      "dataType": "LONG",
+      "format": "1:MILLISECONDS:EPOCH",
+      "granularity": "1:MILLISECONDS"
+    }
+  ],
+  "primaryKeyColumns": ["wishlist_id"]
+}

@@ -1,0 +1,16 @@
+{
+  "schemaName": "fact_user_activity",
+  "dimensionFieldSpecs": [
+    {"name": "activity_id", "dataType": "STRING"},
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "activity_type", "dataType": "STRING"},
+    {"name": "reference_id", "dataType": "STRING"},
+    {"name": "summary", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["activity_id"]
+}

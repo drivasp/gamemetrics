@@ -1,0 +1,272 @@
+<div class="library-page">
+  <header>
+    <div>
+      <h1>Mi biblioteca</h1>
+      <p class="sub">GameMetrics Launcher · Instala, juega y desbloquea logros</p>
+    </div>
+    <a routerLink="/store" class="btn-store-top">+ Añadir un juego</a>
+  </header>
+
+  <div class="banner" *ngIf="paidBanner">Compra exitosa. Tus juegos ya están en la biblioteca.</div>
+
+  <div class="lib-tabs">
+    <button [class.active]="tab === 'games'" (click)="setTab('games')">Juegos</button>
+    <button [class.active]="tab === 'achievements'" (click)="setTab('achievements')">
+      Logros
+      <span class="tab-count" *ngIf="myAchievements.length">{{ myAchievements.length }}</span>
+    </button>
+  </div>
+
+  <div *ngIf="loading && tab === 'games'" class="state">Cargando biblioteca...</div>
+
+  <div *ngIf="!loading && tab === 'games' && items.length === 0" class="state empty">
+    <p>Aún no tienes juegos. Explora la tienda y agrégalos al carrito.</p>
+    <a routerLink="/store" class="btn-store">Ir a la tienda</a>
+  </div>
+
+  <!-- Sección Logros -->
+  <section class="achievements-section" *ngIf="tab === 'achievements'">
+    <div *ngIf="achievementsLoading" class="state">Cargando logros...</div>
+    <div *ngIf="!achievementsLoading && myAchievements.length === 0" class="state empty">
+      <p>Aún no has desbloqueado logros. Instala un juego, júgalo y gana tu primer logro.</p>
+    </div>
+    <div class="my-ach-grid" *ngIf="!achievementsLoading && myAchievements.length > 0">
+      <article class="my-ach-card" *ngFor="let a of myAchievements">
+        <div class="icon">🏆</div>
+        <div class="info">
+          <h3>{{ a.name }}</h3>
+          <p class="desc">{{ a.description }}</p>
+          <p class="game">{{ a.game_name }} · {{ a.points }} pts</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <div class="lib-grid" *ngIf="!loading && tab === 'games' && items.length > 0">
+    <article class="lib-card" *ngFor="let g of items" [class.playing-card]="playing?.product_id === g.product_id">
+      <div class="cover" (click)="openDetails(g)">
+        <img *ngIf="g.game_image" [src]="g.game_image" [alt]="g.game_name">
+        <div *ngIf="!g.game_image" class="cover-ph">🎮</div>
+        <span class="status-pill" [attr.data-status]="g.install_status">{{ statusLabel(g.install_status) }}</span>
+      </div>
+
+      <div class="body">
+        <h3 (click)="openDetails(g)">{{ g.game_name }}</h3>
+        <p class="meta-line">{{ formatPlaytime(g.playtime_minutes) }}</p>
+        <p class="meta-line dim">Comprado {{ formatDate(g.purchased_at) }}</p>
+
+        <div class="progress-wrap" *ngIf="g.install_status === 'downloading'">
+          <div class="progress-bar"><div class="fill" [style.width.%]="g.progress_pct"></div></div>
+          <span>{{ g.progress_pct | number:'1.0-0' }}%</span>
+        </div>
+
+        <div class="actions">
+          <button
+            *ngIf="g.install_status === 'not_installed'"
+            class="btn-install"
+            [disabled]="!!installingId"
+            (click)="install(g)">
+            Instalar
+          </button>
+
+          <button
+            *ngIf="g.install_status === 'downloading'"
+            class="btn-install busy"
+            disabled>
+            Descargando...
+          </button>
+
+          <button
+            *ngIf="g.install_status === 'installed' && playing?.product_id !== g.product_id"
+            class="btn-play"
+            (click)="play(g)">
+            ▶ Jugar
+          </button>
+
+          <button
+            *ngIf="playing?.product_id === g.product_id"
+            class="btn-stop"
+            (click)="stopPlay()">
+            ■ Detener
+          </button>
+
+          <button class="btn-ghost" (click)="openDetails(g)">Detalles</button>
+
+          <button
+            *ngIf="g.install_status === 'installed'"
+            class="btn-ghost"
+            (click)="askUninstall(g)">
+            Desinstalar
+          </button>
+
+          <button
+            class="btn-ghost danger"
+            [disabled]="!canRefund(g)"
+            (click)="openRefund(g)">
+            Reembolso
+          </button>
+        </div>
+      </div>
+    </article>
+  </div>
+</div>
+
+<!-- Confirmación desinstalar -->
+<div class="confirm-backdrop" *ngIf="uninstallItem" (click)="cancelUninstall()">
+  <div class="confirm-modal" (click)="$event.stopPropagation()">
+    <h2>¿Desinstalar este juego?</h2>
+    <p>Se eliminará <strong>{{ uninstallItem.game_name }}</strong> de este equipo. Podrás instalarlo de nuevo cuando quieras. Tu progreso de logros y tiempo jugado se conservan.</p>
+    <div class="confirm-actions">
+      <button class="btn-ghost" (click)="cancelUninstall()" [disabled]="uninstalling">Cancelar</button>
+      <button class="btn-stop" (click)="confirmUninstall()" [disabled]="uninstalling">
+        {{ uninstalling ? 'Desinstalando...' : 'Desinstalar' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay jugando -->
+<div class="play-overlay" *ngIf="playing">
+  <div class="play-panel">
+    <div class="pulse"></div>
+    <img *ngIf="playing.game_image" [src]="playing.game_image" [alt]="playing.game_name">
+    <h2>{{ playing.game_name }}</h2>
+    <p class="now">En ejecución</p>
+    <div class="clock">{{ playClock() }}</div>
+    <p class="hint">El tiempo se registra en tu historial de juego</p>
+    <button class="btn-stop-lg" (click)="stopPlay()">Finalizar sesión</button>
+  </div>
+</div>
+
+<!-- Panel detalles / logros -->
+<div class="detail-backdrop" *ngIf="detailItem" (click)="closeDetails()">
+  <div class="detail-panel" (click)="$event.stopPropagation()">
+    <header>
+      <h2>{{ detailItem.game_name }}</h2>
+      <button class="btn-x" (click)="closeDetails()">✕</button>
+    </header>
+
+    <div class="detail-hero">
+      <img *ngIf="detailItem.game_image" [src]="detailItem.game_image" [alt]="detailItem.game_name">
+      <div>
+        <p><span>Estado</span> {{ statusLabel(detailItem.install_status) }}</p>
+        <p><span>Tiempo jugado</span> {{ formatPlaytime(detailItem.playtime_minutes) }}</p>
+        <p *ngIf="buildInfo"><span>Build</span> v{{ buildInfo.version }} · {{ buildInfo.os }} · {{ formatSize(buildInfo.file_size_bytes) }}</p>
+        <div class="detail-actions">
+          <button *ngIf="detailItem.install_status === 'not_installed'" class="btn-install" (click)="install(detailItem)">Instalar</button>
+          <button *ngIf="detailItem.install_status === 'installed'" class="btn-play" (click)="play(detailItem); closeDetails()">▶ Jugar</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="achievements">
+      <h3>Logros</h3>
+      <div class="ach-count" *ngIf="achievements.length">
+        {{ unlockedCount() }} / {{ achievements.length }} desbloqueados
+      </div>
+      <div *ngIf="detailLoading" class="state">Cargando logros...</div>
+      <div class="ach-grid" *ngIf="!detailLoading">
+        <article class="ach-card" *ngFor="let a of achievements" [class.on]="a.unlocked">
+          <div class="icon">{{ a.unlocked ? '🏆' : '🔒' }}</div>
+          <div>
+            <h4>{{ a.name }}</h4>
+            <p>{{ a.description }}</p>
+            <span class="pts">{{ a.points }} pts</span>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Modal reembolso (Fase 2) -->
+<div class="refund-backdrop" *ngIf="refundItem" (click)="closeRefund()">
+  <div class="refund-modal" (click)="$event.stopPropagation()">
+    <header class="rm-header">
+      <h2>Solicitud de reembolso</h2>
+      <button class="btn-x" (click)="closeRefund()" aria-label="Cerrar">✕</button>
+    </header>
+
+    <div class="steps" *ngIf="refundStep !== 'done'">
+      <span [class.on]="refundStep === 1">1. Política</span>
+      <span [class.on]="refundStep === 2">2. Motivo</span>
+      <span [class.on]="refundStep === 3">3. Confirmar</span>
+    </div>
+
+    <div class="rm-body">
+      <div class="game-row" *ngIf="refundStep !== 'done'">
+        <img *ngIf="refundItem.game_image" [src]="refundItem.game_image" [alt]="refundItem.game_name">
+        <div *ngIf="!refundItem.game_image" class="ph">🎮</div>
+        <div>
+          <h3>{{ refundItem.game_name }}</h3>
+          <p>Comprado el {{ formatDate(refundItem.purchased_at) }}</p>
+          <p class="amt">Reembolso: <strong>{{ refundItem.amount | currency:'USD':'symbol':'1.2-2' }}</strong> a tu cartera</p>
+        </div>
+      </div>
+
+      <section *ngIf="refundStep === 1" class="step-panel">
+        <h4>Política de reembolso GameMetrics</h4>
+        <ul>
+          <li>Puedes solicitar reembolso dentro de los <strong>14 días</strong> posteriores a la compra.</li>
+          <li>El importe se acredita en tu <strong>cartera GameMetrics</strong> (no a tarjeta).</li>
+          <li>Al aprobarse, <strong>pierdes el acceso</strong> al juego en tu biblioteca.</li>
+          <li>Te quedan <strong>{{ daysLeft(refundItem) }} día(s)</strong> para solicitarlo.</li>
+        </ul>
+      </section>
+
+      <section *ngIf="refundStep === 2" class="step-panel">
+        <h4>¿Por qué solicitas el reembolso?</h4>
+        <label class="reason" *ngFor="let r of reasons">
+          <input type="radio" name="reason" [value]="r" [(ngModel)]="refundReason">
+          <span>{{ r }}</span>
+        </label>
+        <textarea
+          *ngIf="refundReason"
+          [(ngModel)]="refundNote"
+          rows="3"
+          placeholder="Detalles adicionales (opcional)"></textarea>
+      </section>
+
+      <section *ngIf="refundStep === 3" class="step-panel">
+        <h4>Confirma tu solicitud</h4>
+        <div class="summary-box">
+          <div class="line"><span>Juego</span><span>{{ refundItem.game_name }}</span></div>
+          <div class="line"><span>Motivo</span><span>{{ refundReason }}</span></div>
+          <div class="line"><span>Importe</span><span class="green">{{ refundItem.amount | currency:'USD':'symbol':'1.2-2' }}</span></div>
+          <div class="line"><span>Destino</span><span>Cartera GameMetrics</span></div>
+        </div>
+        <label class="check">
+          <input type="checkbox" [(ngModel)]="refundConfirm">
+          <span>Entiendo que perderé el acceso a este juego y el dinero irá a mi cartera.</span>
+        </label>
+      </section>
+
+      <section *ngIf="refundStep === 'done'" class="step-panel done">
+        <div class="ok-icon">✓</div>
+        <h4>Reembolso aprobado</h4>
+        <p>{{ refundSuccessMsg }}</p>
+        <p class="big-amt">+{{ refundAmount | currency:'USD':'symbol':'1.2-2' }}</p>
+        <a routerLink="/my-wallet" class="link-wallet" (click)="closeRefund()">Ver mi cartera →</a>
+      </section>
+
+      <p class="err" *ngIf="refundError">{{ refundError }}</p>
+    </div>
+
+    <footer class="rm-footer" *ngIf="refundStep !== 'done'">
+      <button class="btn-ghost" *ngIf="refundStep === 1" (click)="closeRefund()">Cancelar</button>
+      <button class="btn-ghost" *ngIf="refundStep !== 1" (click)="prevStep()" [disabled]="refundLoading">Atrás</button>
+      <button class="btn-next" *ngIf="refundStep !== 3" (click)="nextStep()">Continuar</button>
+      <button
+        class="btn-submit"
+        *ngIf="refundStep === 3"
+        [disabled]="!refundConfirm || refundLoading"
+        (click)="submitRefund()">
+        {{ refundLoading ? 'Procesando...' : 'Confirmar reembolso' }}
+      </button>
+    </footer>
+
+    <footer class="rm-footer" *ngIf="refundStep === 'done'">
+      <button class="btn-next" (click)="closeRefund()">Cerrar</button>
+    </footer>
+  </div>
+</div>

@@ -1,0 +1,87 @@
+<div class="profile-page" *ngIf="user">
+
+  <!-- Header -->
+  <div class="profile-header">
+    <div class="avatar-wrapper">
+      <img *ngIf="user.avatar" [src]="user.avatar" [alt]="user.display_name || user.email" class="avatar-img">
+      <div *ngIf="!user.avatar" class="avatar-placeholder">{{ avatarLabel }}</div>
+      <label class="avatar-edit-btn" title="Cambiar foto">
+        📷
+        <input type="file" accept="image/*" (change)="onAvatarChange($event)" hidden>
+      </label>
+    </div>
+
+    <div class="profile-info">
+      <ng-container *ngIf="!editing">
+        <h1 class="profile-name">{{ user.display_name || 'Sin nombre' }}</h1>
+        <p class="profile-email">{{ user.email }}</p>
+        <p class="profile-bio" *ngIf="user.bio">{{ user.bio }}</p>
+        <button class="btn-edit" (click)="startEdit()">✏ Editar perfil</button>
+      </ng-container>
+
+      <ng-container *ngIf="editing">
+        <input class="edit-input" [(ngModel)]="editDisplayName" placeholder="Nombre de usuario">
+        <textarea class="edit-textarea" [(ngModel)]="editBio" placeholder="Bio (opcional)" rows="2"></textarea>
+        <div class="edit-actions">
+          <button class="btn-save" (click)="saveProfile()" [disabled]="savingProfile">
+            {{ savingProfile ? 'Guardando...' : 'Guardar' }}
+          </button>
+          <button class="btn-cancel" (click)="cancelEdit()">Cancelar</button>
+        </div>
+      </ng-container>
+
+      <p class="profile-msg" *ngIf="profileMsg">{{ profileMsg }}</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <span class="stat-num">{{ wishlistItems.length }}</span>
+      <span class="stat-label">En Wishlist</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-num">0</span>
+      <span class="stat-label">Comprados</span>
+    </div>
+  </div>
+
+  <!-- Wishlist -->
+  <section class="section">
+    <h2>Mi lista de deseados</h2>
+
+    <div *ngIf="loadingWishlist" class="empty-state">Cargando...</div>
+
+    <div *ngIf="!loadingWishlist && wishlistItems.length === 0" class="empty-state">
+      <p>Tu wishlist está vacía.</p>
+      <button class="btn-store" (click)="goToGame('')">Ir a la tienda</button>
+    </div>
+
+    <div *ngIf="!loadingWishlist && wishlistItems.length > 0" class="wishlist-grid">
+      <div class="wishlist-card" *ngFor="let item of wishlistItems">
+        <img
+          *ngIf="item.game_image"
+          [src]="item.game_image"
+          [alt]="item.game_name"
+          class="wl-img"
+          (click)="goToGame(item.game_slug)">
+        <div *ngIf="!item.game_image" class="wl-img-placeholder" (click)="goToGame(item.game_slug)">🎮</div>
+
+        <div class="wl-info">
+          <span class="wl-name" (click)="goToGame(item.game_slug)">{{ item.game_name }}</span>
+          <span class="wl-price" [class.free]="item.game_price === 0">
+            {{ item.game_price === 0 ? 'GRATIS' : '$' + item.game_price.toFixed(2) }}
+          </span>
+        </div>
+
+        <button class="btn-remove" (click)="removeFromWishlist(item.game_slug)" title="Eliminar">✕</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Logout -->
+  <div class="logout-section">
+    <button class="btn-logout" (click)="logout()">Cerrar sesión</button>
+  </div>
+
+</div>
