@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, HostListener } from '@angular/core';
+import { Component, OnInit, inject, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -7,12 +7,13 @@ import { CartService } from '../../services/cart.service';
 import { WalletService } from '../../services/wallet.service';
 import { GiftsService } from '../../services/gifts.service';
 import { SocialService } from '../../services/social.service';
+import { MatIconModule } from '@angular/material/icon';
 import { ModalService } from '../../services/modal.service';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink, RouterLinkActive, MatIconModule],
   templateUrl: './navbar.component.html',
 })
 export class NavbarComponent implements OnInit {
@@ -23,6 +24,7 @@ export class NavbarComponent implements OnInit {
   private social = inject(SocialService);
   private modal = inject(ModalService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   user: User | null = null;
   dropdownOpen = false;
@@ -46,7 +48,7 @@ export class NavbarComponent implements OnInit {
     this.auth.currentUser$.subscribe(u => {
       this.user = u;
       if (u) {
-        this.refreshCartCount();
+        this.cartSvc.refreshCount();
         this.walletSvc.refresh();
         this.giftsSvc.refreshPending();
         this.social.refreshUnread();
@@ -59,18 +61,26 @@ export class NavbarComponent implements OnInit {
         this.giftsSvc.clearPending();
         this.social.clearUnread();
       }
+      this.cdr.detectChanges();
+    });
+    this.cartSvc.cartCount$.subscribe(n => {
+      this.cartCount = n;
+      this.cdr.detectChanges();
     });
     this.cartSvc.cartChanged$.subscribe(() => {
-      if (this.user) this.refreshCartCount();
+      if (this.user) this.cartSvc.refreshCount();
     });
     this.walletSvc.walletBalance$.subscribe(b => {
       this.walletBalance = b ?? 0;
+      this.cdr.detectChanges();
     });
     this.giftsSvc.pendingCount$.subscribe(n => {
       this.giftPending = n;
+      this.cdr.detectChanges();
     });
     this.social.unreadCount$.subscribe(n => {
       this.notifUnread = n;
+      this.cdr.detectChanges();
     });
   }
 
@@ -155,7 +165,7 @@ export class NavbarComponent implements OnInit {
   logout(): void {
     this.dropdownOpen = false;
     this.auth.logout();
-    this.router.navigate(['/store']);
+    this.router.navigate(['/']);
   }
 
   @HostListener('document:click', ['$event'])
@@ -175,6 +185,7 @@ export class NavbarComponent implements OnInit {
       || url.startsWith('/my-library') || url.startsWith('/payment')
       || url.startsWith('/my-wallet') || url.startsWith('/my-gifts')
       || url.startsWith('/my-friends') || url.startsWith('/my-support')
-      || url.startsWith('/my-partner') || url.startsWith('/my-family');
+      || url.startsWith('/my-partner') || url.startsWith('/my-family')
+      || url.startsWith('/profile');
   }
 }

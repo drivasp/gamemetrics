@@ -9,7 +9,7 @@
     <nav class="table-list">
       @for (t of tables; track t.key) {
         <button class="table-item" [class.active]="selected.key === t.key" (click)="loadTable(t)">
-          <span class="table-icon">{{ t.icon }}</span>
+          <span class="table-icon"><mat-icon>{{ t.icon }}</mat-icon></span>
           <span class="table-label">{{ t.label }}</span>
         </button>
       }
@@ -22,7 +22,7 @@
     <!-- Header -->
     <div class="content-header">
       <div class="header-left">
-        <span class="table-icon-lg">{{ selected.icon }}</span>
+        <span class="table-icon-lg"><mat-icon>{{ selected.icon }}</mat-icon></span>
         <div>
           <h2 class="table-title">{{ selected.label }}</h2>
           <p class="table-desc">{{ selected.desc }}</p>
@@ -90,7 +90,9 @@
       <!-- Pagination -->
       @if (page.totalPages > 1 && !searchText) {
         <div class="pagination">
-          <button class="page-btn" [disabled]="currentPage === 1" (click)="goPage(currentPage - 1)">‹</button>
+          <button class="page-btn" [disabled]="currentPage === 1" (click)="goPage(currentPage - 1)">
+            <mat-icon class="gm-icon-sm">chevron_left</mat-icon>
+          </button>
           @if (pageNumbers[0] > 1) {
             <button class="page-btn" (click)="goPage(1)">1</button>
             @if (pageNumbers[0] > 2) { <span class="ellipsis">…</span> }
@@ -102,7 +104,9 @@
             @if (pageNumbers[pageNumbers.length - 1] < page.totalPages - 1) { <span class="ellipsis">…</span> }
             <button class="page-btn" (click)="goPage(page.totalPages)">{{ page.totalPages }}</button>
           }
-          <button class="page-btn" [disabled]="currentPage === page.totalPages" (click)="goPage(currentPage + 1)">›</button>
+          <button class="page-btn" [disabled]="currentPage === page.totalPages" (click)="goPage(currentPage + 1)">
+            <mat-icon class="gm-icon-sm">chevron_right</mat-icon>
+          </button>
           <span class="page-info">Pág. {{ currentPage }} / {{ page.totalPages }}</span>
         </div>
       }
@@ -126,7 +130,9 @@
         <h3 class="modal-title">
           {{ modalMode === 'create' ? 'Nuevo registro — ' + selected.label : 'Editar registro — ' + selected.label }}
         </h3>
-        <button class="modal-close" (click)="closeModal()">✕</button>
+        <button class="modal-close" (click)="closeModal()" aria-label="Cerrar">
+          <mat-icon class="gm-icon-sm">close</mat-icon>
+        </button>
       </div>
 
       <form class="modal-form" (ngSubmit)="save()" #crudForm="ngForm">
@@ -177,7 +183,7 @@
 @if (showDeleteConfirm) {
   <div class="modal-overlay" (click)="cancelDelete()">
     <div class="confirm-box" (click)="$event.stopPropagation()">
-      <div class="confirm-icon">⚠️</div>
+      <div class="confirm-icon"><mat-icon class="gm-icon-xl">warning</mat-icon></div>
       <h3 class="confirm-title">Eliminar registro</h3>
       <p class="confirm-msg">
         ¿Estás seguro de eliminar <strong>{{ deleteName }}</strong>?<br>

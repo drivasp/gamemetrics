@@ -9,7 +9,7 @@
     <nav class="dim-list">
       @for (d of dims; track d.key) {
         <button class="dim-item" [class.active]="selected.key === d.key" (click)="loadDim(d)">
-          <span class="dim-icon">{{ d.icon }}</span>
+          <span class="dim-icon"><mat-icon>{{ d.icon }}</mat-icon></span>
           <span class="dim-label">{{ d.label }}</span>
         </button>
       }
@@ -22,7 +22,7 @@
     <!-- Header -->
     <div class="content-header">
       <div class="header-left">
-        <span class="dim-icon-lg">{{ selected.icon }}</span>
+        <span class="dim-icon-lg"><mat-icon>{{ selected.icon }}</mat-icon></span>
         <div>
           <h2 class="dim-title">{{ selected.label }}</h2>
           <p class="dim-desc">{{ selected.desc }}</p>
@@ -82,9 +82,13 @@
       <!-- Pagination -->
       @if (!searchText) {
         <div class="pagination">
-          <button class="page-btn" [disabled]="page === 0" (click)="prevPage()">‹ Anterior</button>
+          <button class="page-btn" [disabled]="page === 0" (click)="prevPage()">
+            <mat-icon class="gm-icon-sm">chevron_left</mat-icon> Anterior
+          </button>
           <span class="page-info">Página {{ page + 1 }} · {{ pageSize }} por página</span>
-          <button class="page-btn" [disabled]="records.length < pageSize" (click)="nextPage()">Siguiente ›</button>
+          <button class="page-btn" [disabled]="records.length < pageSize" (click)="nextPage()">
+            Siguiente <mat-icon class="gm-icon-sm">chevron_right</mat-icon>
+          </button>
         </div>
       }
     }
@@ -93,7 +97,7 @@
     @if (!loading && filtered.length === 0) {
       <div class="empty-state">
         @if (records.length === 0) {
-          <div class="empty-icon">📭</div>
+          <div class="empty-icon"><mat-icon class="gm-icon-xl">inbox</mat-icon></div>
           <p>No hay datos en esta dimensión.</p>
           <p class="empty-hint">Ejecuta <strong>Crear Dimensiones</strong> desde el Dashboard para poblarla.</p>
         } @else {

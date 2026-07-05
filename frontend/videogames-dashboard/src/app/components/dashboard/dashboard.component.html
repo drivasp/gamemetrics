@@ -3,7 +3,7 @@
   <!-- Page Header -->
   <div class="page-header">
     <div class="page-title">
-      <span class="page-icon">🎮</span>
+      <span class="page-icon"><mat-icon class="gm-icon-lg">sports_esports</mat-icon></span>
       <div>
         <h1>GameMetrics S.A.</h1>
         <p class="page-subtitle">Plataforma de análisis de videojuegos</p>
@@ -11,10 +11,10 @@
     </div>
     <div class="tab-nav">
       <button class="tab-btn" [class.active]="activeTab === 'etl'" (click)="setTab('etl')">
-        <span class="tab-icon">⚙️</span> Panel ETL
+        <span class="tab-icon"><mat-icon class="gm-icon-sm">settings</mat-icon></span> Panel ETL
       </button>
       <button class="tab-btn" [class.active]="activeTab === 'analytics'" (click)="setTab('analytics')">
-        <span class="tab-icon">📊</span> Analytics
+        <span class="tab-icon"><mat-icon class="gm-icon-sm">analytics</mat-icon></span> Analytics
       </button>
     </div>
   </div>
@@ -52,13 +52,16 @@
               }
             </div>
             <span class="etl-semanas-info">
-              {{ semanaYaCargada(selectedSemanaETL) ? '✓ Semana ' + selectedSemanaETL + ' ya cargada' : 'Semana ' + selectedSemanaETL + ' no cargada' }}
+              {{ semanaYaCargada(selectedSemanaETL) ? 'Semana ' + selectedSemanaETL + ' ya cargada' : 'Semana ' + selectedSemanaETL + ' no cargada' }}
             </span>
           </div>
 
           @if (confirmSemana !== null) {
             <div class="etl-confirm-box">
-              <span class="etl-confirm-msg">⚠ La semana {{ confirmSemana }} ya está en Pinot. ¿Reemplazarla con datos nuevos?</span>
+              <span class="etl-confirm-msg">
+                <mat-icon class="gm-icon-sm">warning</mat-icon>
+                {{ getConfirmReemplazoMsg() }}
+              </span>
               <div class="etl-confirm-actions">
                 <button class="step-btn step-btn--danger" (click)="confirmarReemplazar()">Sí, reemplazar</button>
                 <button class="step-btn step-btn--cancel" (click)="cancelarConfirmacion()">Cancelar</button>
@@ -69,7 +72,7 @@
           <div class="step-meta">
             <span class="step-target">Parquet → Apache Pinot (semana {{ selectedSemanaETL }})</span>
             <button class="step-btn" [disabled]="etlStatus.dataset.status === 'running'" (click)="reloadDataset()">
-              {{ etlStatus.dataset.status === 'running' ? 'Ejecutando...' : '▶ Cargar Semana ' + selectedSemanaETL }}
+              {{ etlStatus.dataset.status === 'running' ? 'Ejecutando...' : 'Cargar Semana ' + selectedSemanaETL }}
             </button>
           </div>
         </div>
@@ -92,7 +95,7 @@
           <div class="step-meta">
             <span class="step-target">Dataset → Kafka → Pinot (10 tablas)</span>
             <button class="step-btn" [disabled]="etlStatus.empresa.status === 'running'" (click)="reloadEmpresa()">
-              {{ etlStatus.empresa.status === 'running' ? 'Ejecutando...' : '▶ Recargar Empresa' }}
+              {{ etlStatus.empresa.status === 'running' ? 'Ejecutando...' : 'Recargar Empresa' }}
             </button>
           </div>
         </div>
@@ -115,7 +118,7 @@
           <div class="step-meta">
             <span class="step-target">Parquet → Pinot (5 dimensiones)</span>
             <button class="step-btn" [disabled]="etlStatus.dimensiones.status === 'running'" (click)="reloadDimensions()">
-              {{ etlStatus.dimensiones.status === 'running' ? 'Ejecutando...' : '▶ Crear Dimensiones' }}
+              {{ etlStatus.dimensiones.status === 'running' ? 'Ejecutando...' : 'Crear Dimensiones' }}
             </button>
           </div>
         </div>
@@ -131,7 +134,7 @@
             <span class="step-badge" [ngClass]="etlStatus.realtime?.status || 'idle'">{{ getStatusLabel(etlStatus.realtime?.status || 'idle') }}</span>
           </div>
           <p class="step-desc">Carrito, órdenes, pagos, biblioteca, reseñas y promociones en Pinot.</p>
-          <button class="step-btn" [disabled]="etlStatus.realtime?.status === 'running'" (click)="createRealtimeTables()">▶ Crear tablas comercio</button>
+          <button class="step-btn" [disabled]="etlStatus.realtime?.status === 'running'" (click)="createRealtimeTables()">Crear tablas comercio</button>
         </div>
       </div>
 
@@ -145,7 +148,7 @@
             <span class="step-badge" [ngClass]="etlStatus.catalogo?.status || 'idle'">{{ getStatusLabel(etlStatus.catalogo?.status || 'idle') }}</span>
           </div>
           <p class="step-desc">Productos vendibles, precios por región y bundles.</p>
-          <button class="step-btn" [disabled]="etlStatus.catalogo?.status === 'running'" (click)="reloadCatalogo()">▶ Cargar catálogo</button>
+          <button class="step-btn" [disabled]="etlStatus.catalogo?.status === 'running'" (click)="reloadCatalogo()">Cargar catálogo</button>
         </div>
       </div>
 
@@ -159,7 +162,7 @@
             <span class="step-badge" [ngClass]="etlStatus.promociones?.status || 'idle'">{{ getStatusLabel(etlStatus.promociones?.status || 'idle') }}</span>
           </div>
           <p class="step-desc">Descuentos weekend vía Kafka → fact_promotions.</p>
-          <button class="step-btn" [disabled]="etlStatus.promociones?.status === 'running'" (click)="seedPromociones()">▶ Seed promociones</button>
+          <button class="step-btn" [disabled]="etlStatus.promociones?.status === 'running'" (click)="seedPromociones()">Seed promociones</button>
         </div>
       </div>
     </div>
@@ -170,12 +173,12 @@
         <span class="col-label">Log de Ejecución</span>
         <button class="log-clear-btn" (click)="clearLog()">Limpiar</button>
       </div>
-      <div class="log-terminal">
+      <div class="log-terminal" #etlLogTerminal>
         @for (line of etlLog; track $index) {
           <div class="log-line"
-            [class.log-ok]="line.includes('✓')"
-            [class.log-err]="line.includes('✗')"
-            [class.log-run]="line.startsWith('[') && !line.includes('✓') && !line.includes('✗')">{{ line }}</div>
+            [class.log-ok]="line.includes('[OK]')"
+            [class.log-err]="line.includes('[ERR]')"
+            [class.log-run]="line.includes('[RUN]')">{{ line }}</div>
         }
       </div>
 
@@ -245,7 +248,7 @@
     <!-- KPI Cards -->
     <div class="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-icon">🕹️</div>
+        <div class="kpi-icon"><mat-icon class="gm-icon-lg">sports_esports</mat-icon></div>
         <div class="kpi-info">
           <span class="kpi-label">Total Registros</span>
           <span class="kpi-value">{{ totalGames | number }}</span>
@@ -253,21 +256,21 @@
         </div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon">⭐</div>
+        <div class="kpi-icon"><mat-icon class="gm-icon-lg">star</mat-icon></div>
         <div class="kpi-info">
           <span class="kpi-label">Mejor Valorado</span>
           <span class="kpi-value kpi-value--sm">{{ bestGame || '—' }}</span>
         </div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon">📺</div>
+        <div class="kpi-icon"><mat-icon class="gm-icon-lg">tv</mat-icon></div>
         <div class="kpi-info">
           <span class="kpi-label">Plataforma Líder</span>
           <span class="kpi-value kpi-value--sm">{{ topPlatform || '—' }}</span>
         </div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon">🎭</div>
+        <div class="kpi-icon"><mat-icon class="gm-icon-lg">category</mat-icon></div>
         <div class="kpi-info">
           <span class="kpi-label">Género Principal</span>
           <span class="kpi-value kpi-value--sm">{{ topGenre || '—' }}</span>

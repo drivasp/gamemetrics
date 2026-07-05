@@ -1,0 +1,21 @@
+@if (!useInlineFallback && displaySrc) {
+  <img
+    [src]="displaySrc"
+    [alt]="alt"
+    [class]="'gm-cover-img ' + imgClass"
+    (error)="onImageError()"
+    loading="lazy" />
+} @else {
+  <div class="gm-cover-fallback" [class]="'size-' + size">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="8" y="18" width="48" height="28" rx="6" stroke="#e94560" stroke-width="2" opacity="0.7"/>
+      <circle cx="22" cy="32" r="4" fill="#e94560" opacity="0.9"/>
+      <circle cx="42" cy="28" r="3" fill="none" stroke="#66c0f4" stroke-width="2"/>
+      <circle cx="48" cy="36" r="3" fill="none" stroke="#66c0f4" stroke-width="2"/>
+      <path d="M32 8 L36 14 L28 14 Z" fill="#e94560" opacity="0.5"/>
+    </svg>
+    @if (showTitle) {
+      <span class="gm-cover-title">{{ title || alt }}</span>
+    }
+  </div>
+}

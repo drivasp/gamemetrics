@@ -13,21 +13,24 @@
       loop
       playsinline>
     </video>
-    <img
-      *ngIf="game.background_image && (!game.trailer_url || !hovering)"
+    <app-game-cover
+      *ngIf="!game.trailer_url || !hovering"
       [src]="game.background_image"
       [alt]="game.name"
-      loading="lazy">
-    <div *ngIf="!game.background_image" class="card-placeholder">
-      <span>🎮</span>
-    </div>
+      [slug]="game.slug"
+      [title]="game.name"
+      size="card">
+    </app-game-cover>
     <span class="discount-pill" *ngIf="game.discount_pct && game.discount_pct > 0">-{{ game.discount_pct }}%</span>
   </div>
   <div class="card-overlay">
     <p class="card-genre">{{ displayGenres || 'Videojuego' }}</p>
     <h3 class="card-name">{{ game.name }}</h3>
     <div class="card-row">
-      <span class="card-rating">⭐ {{ game.rating.toFixed(1) }}</span>
+      <span class="card-rating">
+        <mat-icon class="gm-icon-sm rating-star">star</mat-icon>
+        {{ game.rating.toFixed(1) }}
+      </span>
       <div class="price-wrap">
         <span class="orig" *ngIf="originalPriceLabel">{{ originalPriceLabel }}</span>
         <span class="card-price" [class.free]="game.is_free">{{ priceLabel }}</span>

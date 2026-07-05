@@ -11,6 +11,8 @@ import {
   Achievement,
 } from '../../services/launcher.service';
 import { AchievementPopupService } from '../../services/achievement-popup.service';
+import { MatIconModule } from '@angular/material/icon';
+import { GameCoverComponent } from '../../shared/game-cover/game-cover.component';
 
 const REFUND_WINDOW_DAYS = 14;
 
@@ -28,7 +30,7 @@ export interface MyAchievement {
 @Component({
   selector: 'app-library',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, GameCoverComponent],
   templateUrl: './library.component.html',
   styleUrl: './library.component.scss',
 })

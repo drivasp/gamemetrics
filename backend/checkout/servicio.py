@@ -3,12 +3,12 @@ import time
 import uuid
 from decimal import Decimal
 
-from cart.modelos_cart import CartDTO, CartItemDTO
+from carrito.modelos_cart import CartDTO, CartItemDTO
 from shared.auth_deps import esc
 from shared.cliente_pinot import pinot_query
 from shared.kafka_producer import kafka_send
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:4200").rstrip("/")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:4000").rstrip("/")
 STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
@@ -241,7 +241,7 @@ async def fulfill_from_stripe_session(session_id: str) -> int:
 
     items = await load_cart_items_for_order(order_id, user_id)
     if not items:
-        from cart.servicio import fetch_cart
+        from carrito.servicio import fetch_cart
         cart = await fetch_cart(user_id)
         items = cart.items
 

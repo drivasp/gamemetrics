@@ -10,7 +10,7 @@ import unicodedata
 import pandas as pd
 import requests
 
-PINOT_CONTROLLER = os.getenv("PINOT_CONTROLLER", "http://localhost:9000")
+PINOT_CONTROLLER = os.getenv("PINOT_CONTROLLER", "http://pinot-controller:9000")
 PARQUET_PATH = "data/stage/videogames.parquet"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 

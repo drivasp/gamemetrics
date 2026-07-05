@@ -12,7 +12,7 @@ export const authGuard: CanActivateFn = () => {
     return true;
   }
 
-  router.navigate(['/store']);
+  router.navigate(['/']);
   modal.openAuthModal();
   return false;
 };

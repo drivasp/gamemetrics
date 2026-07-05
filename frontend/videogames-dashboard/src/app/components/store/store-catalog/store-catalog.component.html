@@ -31,7 +31,9 @@
           class="check-item"
           [class.active]="selectedPrice === opt.v || (opt.v === '' && selectedPrice === '')"
           (click)="selectPrice(opt.v)">
-          <span class="check-box" [class.checked]="selectedPrice === opt.v || (opt.v === '' && selectedPrice === '')">✓</span>
+          <span class="check-box" [class.checked]="selectedPrice === opt.v || (opt.v === '' && selectedPrice === '')">
+            <mat-icon class="gm-icon-sm">check</mat-icon>
+          </span>
           {{ opt.l }}
         </button>
       </div>
@@ -46,7 +48,9 @@
           class="check-item"
           [class.active]="selectedGenre === g"
           (click)="selectGenre(g)">
-          <span class="check-box" [class.checked]="selectedGenre === g">✓</span>
+          <span class="check-box" [class.checked]="selectedGenre === g">
+            <mat-icon class="gm-icon-sm">check</mat-icon>
+          </span>
           {{ g }}
         </button>
       </div>
@@ -61,7 +65,9 @@
           class="check-item"
           [class.active]="selectedPlatform === p"
           (click)="selectPlatform(p)">
-          <span class="check-box" [class.checked]="selectedPlatform === p">✓</span>
+          <span class="check-box" [class.checked]="selectedPlatform === p">
+            <mat-icon class="gm-icon-sm">check</mat-icon>
+          </span>
           {{ p }}
         </button>
       </div>
@@ -76,11 +82,15 @@
   <main class="catalog-main">
 
     <div class="catalog-bar">
-      <span class="showing-count" *ngIf="!loading && totalCount > 0">
+      <span class="showing-count" *ngIf="!loading && !errorMsg && totalCount > 0">
         Mostrando {{ showingFrom }}–{{ showingTo }} de {{ totalCount | number }} juegos
       </span>
       <span class="showing-count" *ngIf="loading">Buscando...</span>
-      <span class="showing-count" *ngIf="!loading && totalCount === 0">Sin resultados</span>
+      <span class="showing-count" *ngIf="!loading && !errorMsg && totalCount === 0">Sin resultados</span>
+    </div>
+
+    <div *ngIf="errorMsg" class="catalog-error" role="alert">
+      {{ errorMsg }}
     </div>
 
     <!-- Loading -->
@@ -90,7 +100,7 @@
 
     <!-- Empty -->
     <div *ngIf="!loading && games.length === 0" class="empty-state">
-      <span>🔍</span>
+      <mat-icon class="gm-icon-xl">search_off</mat-icon>
       <p>No se encontraron juegos con los filtros seleccionados.</p>
       <button class="btn-clear" (click)="clearFilters()">Limpiar filtros</button>
     </div>
@@ -102,12 +112,16 @@
 
     <!-- Pagination -->
     <div class="pagination" *ngIf="totalPages > 1">
-      <button class="page-btn" [disabled]="page === 0" (click)="goPage(page)">‹</button>
+      <button class="page-btn" [disabled]="page === 0" (click)="goPage(page)">
+        <mat-icon class="gm-icon-sm">chevron_left</mat-icon>
+      </button>
       <button
         *ngFor="let n of pageNumbers"
         class="page-btn" [class.active]="n === page + 1"
         (click)="goPage(n)">{{ n }}</button>
-      <button class="page-btn" [disabled]="page + 1 >= totalPages" (click)="goPage(page + 2)">›</button>
+      <button class="page-btn" [disabled]="page + 1 >= totalPages" (click)="goPage(page + 2)">
+        <mat-icon class="gm-icon-sm">chevron_right</mat-icon>
+      </button>
     </div>
 
   </main>

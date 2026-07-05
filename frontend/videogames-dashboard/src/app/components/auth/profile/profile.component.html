@@ -6,7 +6,7 @@
       <img *ngIf="user.avatar" [src]="user.avatar" [alt]="user.display_name || user.email" class="avatar-img">
       <div *ngIf="!user.avatar" class="avatar-placeholder">{{ avatarLabel }}</div>
       <label class="avatar-edit-btn" title="Cambiar foto">
-        📷
+        <mat-icon class="gm-icon-sm">photo_camera</mat-icon>
         <input type="file" accept="image/*" (change)="onAvatarChange($event)" hidden>
       </label>
     </div>
@@ -16,7 +16,9 @@
         <h1 class="profile-name">{{ user.display_name || 'Sin nombre' }}</h1>
         <p class="profile-email">{{ user.email }}</p>
         <p class="profile-bio" *ngIf="user.bio">{{ user.bio }}</p>
-        <button class="btn-edit" (click)="startEdit()">✏ Editar perfil</button>
+        <button class="btn-edit" (click)="startEdit()">
+          <mat-icon class="gm-icon-sm">edit</mat-icon> Editar perfil
+        </button>
       </ng-container>
 
       <ng-container *ngIf="editing">
@@ -41,7 +43,7 @@
       <span class="stat-label">En Wishlist</span>
     </div>
     <div class="stat-card">
-      <span class="stat-num">0</span>
+      <span class="stat-num">{{ purchasedCount }}</span>
       <span class="stat-label">Comprados</span>
     </div>
   </div>
@@ -59,13 +61,15 @@
 
     <div *ngIf="!loadingWishlist && wishlistItems.length > 0" class="wishlist-grid">
       <div class="wishlist-card" *ngFor="let item of wishlistItems">
-        <img
-          *ngIf="item.game_image"
-          [src]="item.game_image"
-          [alt]="item.game_name"
-          class="wl-img"
-          (click)="goToGame(item.game_slug)">
-        <div *ngIf="!item.game_image" class="wl-img-placeholder" (click)="goToGame(item.game_slug)">🎮</div>
+        <div class="wl-img-wrap" (click)="goToGame(item.game_slug)">
+          <app-game-cover
+            [src]="item.game_image"
+            [alt]="item.game_name"
+            [slug]="item.game_slug"
+            [title]="item.game_name"
+            size="cover">
+          </app-game-cover>
+        </div>
 
         <div class="wl-info">
           <span class="wl-name" (click)="goToGame(item.game_slug)">{{ item.game_name }}</span>
@@ -74,7 +78,9 @@
           </span>
         </div>
 
-        <button class="btn-remove" (click)="removeFromWishlist(item.game_slug)" title="Eliminar">✕</button>
+        <button class="btn-remove" (click)="removeFromWishlist(item.game_slug)" title="Eliminar" aria-label="Eliminar">
+          <mat-icon class="gm-icon-sm">close</mat-icon>
+        </button>
       </div>
     </div>
   </section>

@@ -2,12 +2,13 @@ import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
+import { MatIconModule } from '@angular/material/icon';
 import { ModalService } from '../../../services/modal.service';
 
 @Component({
   selector: 'app-auth-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatIconModule],
   templateUrl: './auth-modal.component.html',
   styleUrl: './auth-modal.component.scss',
 })

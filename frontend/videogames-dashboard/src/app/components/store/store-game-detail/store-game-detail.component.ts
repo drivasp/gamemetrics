@@ -16,12 +16,15 @@ import { AlertsService } from '../../../services/alerts.service';
 import { EventsService } from '../../../services/events.service';
 import { WalletService } from '../../../services/wallet.service';
 import { CommunityService } from '../../../services/community.service';
+import { MatIconModule } from '@angular/material/icon';
 import { ModalService } from '../../../services/modal.service';
+import { GameCoverComponent } from '../../../shared/game-cover/game-cover.component';
+import { coverPlaceholderUrl } from '../../../shared/utils/cover-url';
 
 @Component({
   selector: 'app-game-detail',
   standalone: true,
-  imports: [CommonModule, StoreGameCardComponent, FormsModule],
+  imports: [CommonModule, StoreGameCardComponent, FormsModule, MatIconModule, GameCoverComponent],
   templateUrl: './store-game-detail.component.html',
   styleUrl: './store-game-detail.component.scss',
 })
@@ -84,8 +87,9 @@ export class StoreGameDetailComponent implements OnInit {
   showTrailer = false;
 
   get heroStyle(): string {
-    const img = this.game?.background_image;
-    return img ? `url('${img}')` : 'none';
+    if (!this.game) return 'none';
+    const url = this.game.background_image || coverPlaceholderUrl(this.game.slug, this.game.name);
+    return `url('${url}')`;
   }
 
   get displayGenres(): string {

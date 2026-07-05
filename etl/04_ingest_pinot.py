@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import requests
 
-PINOT_CONTROLLER = os.getenv("PINOT_CONTROLLER", "http://localhost:9000")
+PINOT_CONTROLLER = os.getenv("PINOT_CONTROLLER", "http://pinot-controller:9000")
 PARQUET_PATH     = "data/stage/videogames.parquet"
 TABLE_NAME       = "fact_videogames"
 BATCH_SIZE       = 100_000
@@ -46,6 +46,25 @@ def save_semanas_cargadas(semanas: set):
     os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
     with open(STATE_FILE, "w") as f:
         json.dump(sorted(semanas), f)
+
+
+# ── Pinot: disponibilidad ─────────────────────────────────────────────────────
+
+def wait_for_pinot_controller(max_attempts: int = 24, pause_sec: int = 5) -> None:
+    """Espera a que el controller responda (p. ej. tras reinicio de contenedor)."""
+    for attempt in range(1, max_attempts + 1):
+        try:
+            r = requests.get(f"{PINOT_CONTROLLER}/health", timeout=5)
+            if r.status_code == 200:
+                print(f"[Pinot] Controller listo ({PINOT_CONTROLLER})")
+                return
+        except Exception as exc:
+            print(f"[Pinot] Intento {attempt}/{max_attempts}: {exc}")
+        time.sleep(pause_sec)
+    raise RuntimeError(
+        f"Pinot Controller no disponible en {PINOT_CONTROLLER}. "
+        "Verifica que el contenedor pinot-controller esté en ejecución."
+    )
 
 
 # ── Pinot: tabla ──────────────────────────────────────────────────────────────
@@ -211,6 +230,8 @@ def ingest_semana(df_base: pd.DataFrame, semana: int) -> bool:
 # ── Punto de entrada ──────────────────────────────────────────────────────────
 
 def ingest():
+    wait_for_pinot_controller()
+
     semanas_cargadas = get_semanas_cargadas()
     pinot_tiene_tabla = tabla_existe()
 
@@ -223,34 +244,57 @@ def ingest():
 
     df_base = prepare_dataframe()
 
-    if not pinot_tiene_tabla or not semanas_cargadas:
-        # Tabla no existe en Pinot (primer arranque o Pinot fue reiniciado)
-        # o es la primera carga. Hay que crear la tabla y recargar semanas previas.
-        if not semanas_cargadas:
+    previas = list(range(1, SEMANA_TARGET))
+    rebuild = (
+        not pinot_tiene_tabla
+        or not semanas_cargadas
+        or (FORCE_RESET and SEMANA_TARGET in semanas_cargadas)
+    )
+
+    if rebuild:
+        if FORCE_RESET and SEMANA_TARGET in semanas_cargadas:
+            posteriores = sorted(s for s in semanas_cargadas if s > SEMANA_TARGET)
+            if posteriores:
+                print(
+                    f"\n[FORCE] Reemplazando semana {SEMANA_TARGET} — "
+                    f"reconstruye semanas 1-{SEMANA_TARGET} "
+                    f"(descarta del estado: {posteriores})"
+                )
+            else:
+                print(
+                    f"\n[FORCE] Reemplazando semana {SEMANA_TARGET} — "
+                    f"reconstruye semanas 1-{SEMANA_TARGET}"
+                )
+        elif not pinot_tiene_tabla and semanas_cargadas:
+            print(f"\n[WARN] Tabla ausente en Pinot; estado tenía {sorted(semanas_cargadas)}.")
+            print(f"[INFO] Recreando tabla con semanas 1-{SEMANA_TARGET}...")
+        elif not semanas_cargadas:
             print("\n[INFO] Primera carga — creando tabla en Pinot...")
         else:
-            print(f"\n[WARN] Tabla ausente en Pinot pero estado dice {sorted(semanas_cargadas)}.")
-            print("[INFO] Recreando tabla y recargando semanas previas...")
+            print(f"\n[INFO] Recreando tabla con semanas 1-{SEMANA_TARGET}...")
         reset_table()
-        for s in sorted(semanas_cargadas):
-            if s != SEMANA_TARGET:
-                ingest_semana(df_base, s)
-
-    elif FORCE_RESET and SEMANA_TARGET in semanas_cargadas:
-        # Reemplazar semana existente: Pinot no soporta DELETE por fila,
-        # así que se resetea la tabla y se recargan todas las semanas.
-        print(f"\n[FORCE] Reemplazando semana {SEMANA_TARGET} — recargando todas las semanas...")
-        reset_table()
-        for s in sorted(semanas_cargadas):
-            if s != SEMANA_TARGET:
-                ingest_semana(df_base, s)
-        # La semana target se carga al final (fuera del if)
+        for s in previas:
+            ingest_semana(df_base, s)
+    else:
+        faltantes = [s for s in previas if s not in semanas_cargadas]
+        if faltantes:
+            print(f"\n[INFO] Cargando semanas previas faltantes: {faltantes}")
+            for s in faltantes:
+                if not ingest_semana(df_base, s):
+                    print(f"\n{'=' * 60}")
+                    print(f"  ERROR — No se pudo ingestar semana previa {s}")
+                    print("=" * 60)
+                    sys.exit(1)
 
     # Cargar la semana objetivo
     ok = ingest_semana(df_base, SEMANA_TARGET)
 
     if ok:
-        semanas_cargadas.add(SEMANA_TARGET)
+        if rebuild:
+            semanas_cargadas = set(range(1, SEMANA_TARGET + 1))
+        else:
+            semanas_cargadas.update(previas)
+            semanas_cargadas.add(SEMANA_TARGET)
         save_semanas_cargadas(semanas_cargadas)
         print("\n" + "=" * 60)
         print(f"  CARGA COMPLETA — Semanas en Pinot: {sorted(semanas_cargadas)}")

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, Subject, tap } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, tap } from 'rxjs';
 import { AuthService } from './auth.service';
 
 export interface CartItem {
@@ -28,19 +28,38 @@ export class CartService {
   private auth = inject(AuthService);
   private base = '/cart';
   private changed = new Subject<void>();
+  private count$ = new BehaviorSubject<number>(0);
 
   readonly cartChanged$ = this.changed.asObservable();
+  readonly cartCount$ = this.count$.asObservable();
 
   private headers(): HttpHeaders {
     return new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken()}` });
+  }
+
+  getCartCount(): number {
+    return this.count$.value;
+  }
+
+  resetCount(): void {
+    this.count$.next(0);
   }
 
   notifyChanged(): void {
     this.changed.next();
   }
 
+  refreshCount(): void {
+    this.getCart().subscribe({
+      next: (c) => this.count$.next(c.item_count),
+      error: () => {},
+    });
+  }
+
   getCart(): Observable<Cart> {
-    return this.http.get<Cart>(this.base, { headers: this.headers() });
+    return this.http.get<Cart>(this.base, { headers: this.headers() }).pipe(
+      tap((c) => this.count$.next(c.item_count)),
+    );
   }
 
   addItem(item: {
@@ -52,19 +71,28 @@ export class CartService {
     quantity?: number;
   }): Observable<CartItem> {
     return this.http.post<CartItem>(`${this.base}/items`, item, { headers: this.headers() }).pipe(
-      tap(() => this.notifyChanged()),
+      tap(() => {
+        this.count$.next(this.count$.value + 1);
+        this.notifyChanged();
+      }),
     );
   }
 
   removeItem(productId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/items/${productId}`, { headers: this.headers() }).pipe(
-      tap(() => this.notifyChanged()),
+      tap(() => {
+        this.count$.next(Math.max(0, this.count$.value - 1));
+        this.notifyChanged();
+      }),
     );
   }
 
   clearCart(): Observable<void> {
     return this.http.delete<void>(this.base, { headers: this.headers() }).pipe(
-      tap(() => this.notifyChanged()),
+      tap(() => {
+        this.count$.next(0);
+        this.notifyChanged();
+      }),
     );
   }
 

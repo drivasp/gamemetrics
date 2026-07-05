@@ -8,9 +8,12 @@
 
   <!-- Error -->
   <div *ngIf="error && !loading" class="error-state">
-    <span>😕</span>
+    <mat-icon class="gm-icon-xl">sentiment_dissatisfied</mat-icon>
     <p>No se encontró el juego.</p>
-    <button class="btn-back" (click)="goBack()">← Volver al catálogo</button>
+    <button class="btn-back" (click)="goBack()">
+      <mat-icon class="gm-icon-sm">arrow_back</mat-icon>
+      Volver al catálogo
+    </button>
   </div>
 
   <ng-container *ngIf="!loading && game">
@@ -19,10 +22,10 @@
     <div class="hero" [style.background-image]="heroStyle">
       <div class="hero-gradient"></div>
       <div class="hero-nav">
-        <button class="breadcrumb" (click)="goToStore()">Store</button>
-        <span class="breadcrumb-sep">›</span>
+        <button class="breadcrumb" (click)="goToStore()">Tienda</button>
+        <span class="breadcrumb-sep"><mat-icon class="gm-icon-sm">chevron_right</mat-icon></span>
         <button class="breadcrumb" (click)="goBack()">Catálogo</button>
-        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-sep"><mat-icon class="gm-icon-sm">chevron_right</mat-icon></span>
         <span class="breadcrumb current">{{ game.name }}</span>
       </div>
     </div>
@@ -43,7 +46,15 @@
           </video>
           <img *ngIf="!showTrailer && activeScreenshot" [src]="activeScreenshot" [alt]="game.name">
         </div>
-        <div class="gallery-placeholder" *ngIf="!activeScreenshot">🎮</div>
+        <div class="gallery-placeholder" *ngIf="!activeScreenshot && !game.trailer_url">
+          <app-game-cover
+            [src]="game.background_image"
+            [alt]="game.name"
+            [slug]="game.slug"
+            [title]="game.name"
+            size="cover">
+          </app-game-cover>
+        </div>
 
         <div class="gallery-strip" *ngIf="game.screenshots.length > 0 || game.trailer_url">
           <button
@@ -51,7 +62,7 @@
             class="thumb-btn trailer"
             [class.active]="showTrailer"
             (click)="showTrailer = true">
-            ▶ Trailer
+            <mat-icon class="gm-icon-sm">play_arrow</mat-icon> Trailer
           </button>
           <img
             *ngFor="let s of game.screenshots"
@@ -115,8 +126,13 @@
       <div class="content-right">
 
         <div class="game-cover">
-          <img *ngIf="game.background_image" [src]="game.background_image" [alt]="game.name">
-          <div *ngIf="!game.background_image" class="cover-placeholder">🎮</div>
+          <app-game-cover
+            [src]="game.background_image"
+            [alt]="game.name"
+            [slug]="game.slug"
+            [title]="game.name"
+            size="cover">
+          </app-game-cover>
         </div>
 
         <h2 class="game-title-side">{{ game.name }}</h2>
@@ -128,7 +144,10 @@
         </div>
 
         <div class="side-actions" *ngIf="owned">
-          <button class="btn-owned" (click)="goLibrary()">✓ En tu biblioteca — Jugar</button>
+          <button class="btn-owned" (click)="goLibrary()">
+            <mat-icon class="gm-icon-sm">check_circle</mat-icon>
+            En tu biblioteca — Jugar
+          </button>
         </div>
 
         <div class="side-actions" *ngIf="!owned">
@@ -137,16 +156,21 @@
             [class.in-cart]="inCart"
             [disabled]="cartLoading || inCart"
             (click)="inCart ? goCart() : addToCart()">
-            {{ inCart ? '🛒 Ver carrito' : (cartLoading ? 'Agregando...' : 'Añadir al carro') }}
+            <mat-icon class="gm-icon-sm" *ngIf="inCart">shopping_cart</mat-icon>
+            {{ inCart ? 'Ver carrito' : (cartLoading ? 'Agregando...' : 'Añadir al carro') }}
           </button>
           <button
             class="btn-wishlist"
             [class.in-wishlist]="inWishlist"
             [disabled]="wishlistLoading"
             (click)="toggleWishlist()">
-            {{ inWishlist ? '♥ En tu wishlist' : '♡ Agregar a Wishlist' }}
+            <mat-icon class="gm-icon-sm">{{ inWishlist ? 'favorite' : 'favorite_border' }}</mat-icon>
+            {{ inWishlist ? 'En tu wishlist' : 'Agregar a Wishlist' }}
           </button>
-          <button class="btn-gift" (click)="showGiftForm = !showGiftForm">🎁 Comprar como regalo</button>
+          <button class="btn-gift" (click)="showGiftForm = !showGiftForm">
+            <mat-icon class="gm-icon-sm">card_giftcard</mat-icon>
+            Comprar como regalo
+          </button>
         </div>
 
         <div class="gift-panel" *ngIf="showGiftForm && !owned">
@@ -216,10 +240,14 @@
             <span>¿Te resultó útil?</span>
             <button
               [class.active]="r.my_vote === true"
-              (click)="voteReview(r, true)">👍 {{ r.helpful_count || 0 }}</button>
+              (click)="voteReview(r, true)">
+              <mat-icon class="gm-icon-sm">thumb_up</mat-icon> {{ r.helpful_count || 0 }}
+            </button>
             <button
               [class.active]="r.my_vote === false"
-              (click)="voteReview(r, false)">👎 {{ r.not_helpful_count || 0 }}</button>
+              (click)="voteReview(r, false)">
+              <mat-icon class="gm-icon-sm">thumb_down</mat-icon> {{ r.not_helpful_count || 0 }}
+            </button>
           </div>
         </article>
         <p *ngIf="reviews.reviews.length === 0" class="no-reviews">Aún no hay reseñas. ¡Sé el primero en comprar y opinar!</p>
@@ -248,7 +276,9 @@
       <div class="thread-view" *ngIf="activeThread">
         <header>
           <h3>{{ activeThread.thread.title }}</h3>
-          <button class="close" (click)="activeThread = null">✕</button>
+          <button class="close" (click)="activeThread = null" aria-label="Cerrar">
+            <mat-icon class="gm-icon-sm">close</mat-icon>
+          </button>
         </header>
         <div class="post" *ngFor="let p of activeThread.posts">
           <strong>{{ p.author_name }}</strong>

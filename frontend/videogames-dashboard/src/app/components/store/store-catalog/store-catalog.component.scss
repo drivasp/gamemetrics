@@ -85,6 +85,16 @@
 
 .catalog-bar { margin-bottom: 18px; }
 
+.catalog-error {
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  color: #fecaca;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
 .showing-count { font-size: 0.82rem; color: #a0a0b0; }
 
 // ── Loading / Empty ────────────────────────────────────────────────────────────

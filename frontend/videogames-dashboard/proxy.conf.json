@@ -31,6 +31,7 @@
   "/store/popular": { "target": "http://localhost:8080", "changeOrigin": true },
   "/store/free-games": { "target": "http://localhost:8080", "changeOrigin": true },
   "/store/genres": { "target": "http://localhost:8080", "changeOrigin": true },
+  "/store/cover-placeholder": { "target": "http://localhost:8080", "changeOrigin": true },
   "/store/filters": { "target": "http://localhost:8080", "changeOrigin": true },
   "/etl": { "target": "http://localhost:5000", "changeOrigin": true }
 }

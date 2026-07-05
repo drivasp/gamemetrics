@@ -9,6 +9,7 @@ from shared.auth_deps import require_token, esc
 from shared.cliente_pinot import pinot_query
 from shared.kafka_producer import kafka_send
 from shared.pinot_utils import to_bool, to_ms
+from wallet.servicio import apply_transaction
 
 router = APIRouter(prefix="/refunds", tags=["refunds"])
 
@@ -57,7 +58,7 @@ async def request_refund(
     payment_id = payment_rows[0][0] if payment_rows else ""
 
     refund_id = uuid.uuid4().hex[:15]
-    amt = float(amount)
+    amt = float(amount or 0)
 
     await kafka_send("fact_refunds", refund_id, {
         "refund_id": refund_id,
@@ -79,15 +80,13 @@ async def request_refund(
         "game_slug": slug,
         "game_name": name,
         "game_image": image or "",
-        "amount": float(amount),
+        "amount": float(amount or 0),
         "purchased_at": purchased_ms,
         "refunded": True,
         "deleted": False,
     })
 
-    # Crédito a la cartera (estilo Steam Wallet)
     try:
-        from wallet.servicio import apply_transaction
         await apply_transaction(
             user_id,
             amt,

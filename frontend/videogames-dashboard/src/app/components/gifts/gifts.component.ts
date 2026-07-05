@@ -1,13 +1,16 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 import { timeout, catchError, of } from 'rxjs';
 import { GiftsService, Gift } from '../../services/gifts.service';
+
+import { GameCoverComponent } from '../../shared/game-cover/game-cover.component';
 
 @Component({
   selector: 'app-gifts',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, MatIconModule, GameCoverComponent],
   templateUrl: './gifts.component.html',
   styleUrl: './gifts.component.scss',
 })

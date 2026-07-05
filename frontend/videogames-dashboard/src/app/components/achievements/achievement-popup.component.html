@@ -2,9 +2,9 @@
   <div class="ach-popup" [class.unlock]="data.kind === 'unlock'" [class.success]="data.kind === 'success'" (click)="$event.stopPropagation()">
     <div class="glow"></div>
     <div class="icon">
-      <span *ngIf="data.kind === 'unlock'">🏆</span>
-      <span *ngIf="data.kind === 'success'">✓</span>
-      <span *ngIf="data.kind === 'info'">ℹ</span>
+      <mat-icon *ngIf="data.kind === 'unlock'" class="gm-icon-xl">emoji_events</mat-icon>
+      <mat-icon *ngIf="data.kind === 'success'" class="gm-icon-xl">check_circle</mat-icon>
+      <mat-icon *ngIf="data.kind === 'info'" class="gm-icon-xl">info</mat-icon>
     </div>
     <h2>{{ data.title }}</h2>
     <p class="game" *ngIf="data.gameName">{{ data.gameName }}</p>

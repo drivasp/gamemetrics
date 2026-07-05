@@ -33,6 +33,7 @@ services:
       timeout: 5s
       retries: 15
       start_period: 30s
+    restart: unless-stopped
     volumes:
       - pinot_controller_data:/opt/pinot/data
     networks:
@@ -48,7 +49,7 @@ services:
     depends_on:
       pinot-controller:
         condition: service_healthy
-    restart: on-failure
+    restart: unless-stopped
     networks:
       gamemetrics:
         ipv4_address: 172.20.0.4
@@ -60,7 +61,7 @@ services:
     depends_on:
       pinot-controller:
         condition: service_healthy
-    restart: on-failure
+    restart: unless-stopped
     volumes:
       - pinot_server_data:/opt/pinot/data
     networks:
@@ -114,12 +115,12 @@ services:
       PINOT_BROKER_URL: http://pinot-broker:8099
       PINOT_CONTROLLER_URL: http://pinot-controller:9000
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      FRONTEND_URL: http://localhost:4200
+      FRONTEND_URL: http://localhost:4000
       RAWG_API_KEY: ${RAWG_API_KEY:-}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
-    restart: on-failure
+    restart: unless-stopped
     volumes:
       - backend_static:/app/static
     networks:
@@ -133,13 +134,19 @@ services:
       - ./etl/data:/etl/data
     environment:
       PINOT_CONTROLLER: http://pinot-controller:9000
+      PINOT_CONTROLLER_URL: http://pinot-controller:9000
+      PINOT_BROKER_URL: http://pinot-broker:8099
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
       pinot-controller:
         condition: service_healthy
+      pinot-broker:
+        condition: service_started
+      pinot-server:
+        condition: service_started
       kafka:
         condition: service_healthy
-    restart: on-failure
+    restart: unless-stopped
     networks:
       gamemetrics:
         ipv4_address: 172.20.0.8
@@ -148,7 +155,7 @@ services:
     build: ./frontend/videogames-dashboard
     container_name: frontend
     ports:
-      - "4200:80"
+      - "4000:80"
     depends_on:
       - backend
       - etl-api

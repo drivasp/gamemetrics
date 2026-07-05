@@ -12,7 +12,7 @@ param(
     [switch]$BootstrapCommerce
 )
 
-$BASE_URL = "http://localhost:4200"
+$BASE_URL = "http://localhost:4000"
 $BOOTSTRAP_FILE = Join-Path $PSScriptRoot "etl\data\stage\commerce_bootstrapped.json"
 $PHASE2_FILE    = Join-Path $PSScriptRoot "etl\data\stage\phase2_bootstrapped.json"
 $PHASE3_FILE    = Join-Path $PSScriptRoot "etl\data\stage\phase3_bootstrapped.json"
@@ -139,7 +139,7 @@ function Invoke-CommerceBootstrap {
     Write-OK "Bootstrap comercio registrado ($BOOTSTRAP_FILE)"
 }
 
-# ────────────────────────────────────────────────────────────
+# ------------------------------------------------------------
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Magenta
 Write-Host "   GameMetrics S.A.  -  Inicio del sistema " -ForegroundColor Magenta
@@ -180,7 +180,7 @@ Write-OK "Contenedores iniciados"
 Write-Step 3 "Esperando que el sistema este listo..."
 Wait-URL "$BASE_URL" "Frontend"
 Wait-URL "$BASE_URL/etl/status" "ETL API"
-Wait-URL "$BASE_URL/api/games/count" "Backend"
+Wait-URL "$BASE_URL/store/featured" "Backend"
 
 # PASO 4 - Bootstrap comercio Fase 1 (solo primera vez o -BootstrapCommerce)
 $bootstrapDone = Test-Path $BOOTSTRAP_FILE
@@ -275,7 +275,7 @@ if ($BootstrapCommerce -or (-not $phase4Done)) {
     Write-Info "Fase 4 ya configurada."
 }
 
-# PASO 8 - Bootstrap Fase 5 (foros, familia, API, búsquedas — 50 tablas)
+# PASO 8 - Bootstrap Fase 5 (foros, familia, API, busquedas - 50 tablas)
 $phase5Done = Test-Path $PHASE5_FILE
 if ($BootstrapCommerce -or (-not $phase5Done)) {
     Write-Step 8 "Bootstrap Fase 5 (Steam completo)..."
@@ -289,7 +289,7 @@ if ($BootstrapCommerce -or (-not $phase5Done)) {
         at           = (Get-Date).ToString("o")
         tables       = 50
     } | ConvertTo-Json | Set-Content $PHASE5_FILE -Encoding UTF8
-    Write-OK "Fase 5 registrada — plataforma 50 tablas ($PHASE5_FILE)"
+    Write-OK "Fase 5 registrada - plataforma 50 tablas ($PHASE5_FILE)"
 } else {
     Write-Info "Fase 5 ya configurada."
 }
@@ -298,7 +298,7 @@ if ($BootstrapCommerce -or (-not $phase5Done)) {
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Green
 Write-Host "   Servicios listos!                       " -ForegroundColor Green
-Write-Host "   Abre: http://localhost:4200             " -ForegroundColor Green
+Write-Host "   Abre: http://localhost:4000             " -ForegroundColor Green
 if (-not (Test-DatasetReady)) {
     Write-Host "   Pendiente: Dashboard paso 01 (dataset)  " -ForegroundColor Yellow
     Write-Host "   y paso 05 si no se cargo el catalogo    " -ForegroundColor Yellow

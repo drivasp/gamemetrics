@@ -1,6 +1,6 @@
 <div class="family-page">
   <header>
-    <a routerLink="/store" class="back">← Tienda</a>
+    <a routerLink="/store" class="back"><mat-icon class="gm-icon-sm">arrow_back</mat-icon> Tienda</a>
     <h1>Family Sharing</h1>
     <p class="sub">Comparte tu biblioteca con tu grupo familiar</p>
   </header>
@@ -61,7 +61,7 @@
         <article class="row" *ngFor="let s of shares">
           <div>
             <strong>{{ s.game_name }}</strong>
-            <p>→ {{ s.shared_with_name }}</p>
+            <p><mat-icon class="gm-icon-sm">arrow_forward</mat-icon> {{ s.shared_with_name }}</p>
           </div>
         </article>
         <p class="empty" *ngIf="!shares.length">Aún no hay juegos compartidos.</p>

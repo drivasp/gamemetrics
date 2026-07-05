@@ -64,6 +64,14 @@ header {
     padding: 2px 6px; border-radius: 2px; letter-spacing: 0.04em;
   }
 
+  .gift-cover {
+    width: 120px;
+    height: 68px;
+    flex-shrink: 0;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
   img { width: 120px; height: 68px; object-fit: cover; border-radius: 2px; }
   h3 { margin: 0 0 6px; color: #fff; }
   .msg { margin: 0 0 6px; font-style: italic; color: #a4d7f5; }
