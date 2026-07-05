@@ -2,7 +2,9 @@ import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 import { CartService, Cart } from '../../services/cart.service';
+import { GameCoverComponent } from '../../shared/game-cover/game-cover.component';
 import { LibraryService, CheckoutResult } from '../../services/library.service';
 import { WalletService } from '../../services/wallet.service';
 import { EventsService } from '../../services/events.service';
@@ -10,7 +12,7 @@ import { EventsService } from '../../services/events.service';
 @Component({
   selector: 'app-payment',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, GameCoverComponent],
   templateUrl: './payment.component.html',
   styleUrl: './payment.component.scss',
 })
@@ -154,6 +156,7 @@ export class PaymentComponent implements OnInit {
         this.paying = false;
         if (res.wallet_balance != null) this.walletBalance = res.wallet_balance;
         this.walletSvc.refresh();
+        this.cartSvc.resetCount();
         this.cartSvc.notifyChanged();
         setTimeout(() => this.router.navigate(['/my-library'], { queryParams: { paid: 1 } }), 1200);
         this.cdr.detectChanges();

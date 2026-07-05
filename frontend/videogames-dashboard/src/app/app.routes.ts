@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
-import { GamesListComponent } from './components/games-list/games-list.component';
 import { EmpresaComponent } from './components/empresa/empresa.component';
 import { DimensionesComponent } from './components/dimensiones/dimensiones.component';
 import { StoreHomeComponent } from './components/store/store-home/store-home.component';
@@ -20,8 +19,8 @@ import { FamilyComponent } from './components/family/family.component';
 import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
-  { path: '', component: DashboardComponent },
-  { path: 'games', component: GamesListComponent },
+  { path: '', component: DashboardComponent, pathMatch: 'full' },
+  { path: 'games', redirectTo: '', pathMatch: 'full' },
   { path: 'empresa', component: EmpresaComponent },
   { path: 'dimensiones', component: DimensionesComponent },
   { path: 'store', component: StoreHomeComponent },

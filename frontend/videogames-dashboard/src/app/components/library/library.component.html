@@ -32,7 +32,7 @@
     </div>
     <div class="my-ach-grid" *ngIf="!achievementsLoading && myAchievements.length > 0">
       <article class="my-ach-card" *ngFor="let a of myAchievements">
-        <div class="icon">🏆</div>
+        <div class="icon"><mat-icon class="gm-icon-md">emoji_events</mat-icon></div>
         <div class="info">
           <h3>{{ a.name }}</h3>
           <p class="desc">{{ a.description }}</p>
@@ -45,8 +45,13 @@
   <div class="lib-grid" *ngIf="!loading && tab === 'games' && items.length > 0">
     <article class="lib-card" *ngFor="let g of items" [class.playing-card]="playing?.product_id === g.product_id">
       <div class="cover" (click)="openDetails(g)">
-        <img *ngIf="g.game_image" [src]="g.game_image" [alt]="g.game_name">
-        <div *ngIf="!g.game_image" class="cover-ph">🎮</div>
+        <app-game-cover
+          [src]="g.game_image"
+          [alt]="g.game_name"
+          [slug]="g.game_slug"
+          [title]="g.game_name"
+          size="cover">
+        </app-game-cover>
         <span class="status-pill" [attr.data-status]="g.install_status">{{ statusLabel(g.install_status) }}</span>
       </div>
 
@@ -80,14 +85,14 @@
             *ngIf="g.install_status === 'installed' && playing?.product_id !== g.product_id"
             class="btn-play"
             (click)="play(g)">
-            ▶ Jugar
+            <mat-icon class="gm-icon-sm">play_arrow</mat-icon> Jugar
           </button>
 
           <button
             *ngIf="playing?.product_id === g.product_id"
             class="btn-stop"
             (click)="stopPlay()">
-            ■ Detener
+            <mat-icon class="gm-icon-sm">stop</mat-icon> Detener
           </button>
 
           <button class="btn-ghost" (click)="openDetails(g)">Detalles</button>
@@ -129,7 +134,15 @@
 <div class="play-overlay" *ngIf="playing">
   <div class="play-panel">
     <div class="pulse"></div>
-    <img *ngIf="playing.game_image" [src]="playing.game_image" [alt]="playing.game_name">
+    <div class="play-cover" *ngIf="playing">
+      <app-game-cover
+        [src]="playing.game_image"
+        [alt]="playing.game_name"
+        [slug]="playing.game_slug"
+        [title]="playing.game_name"
+        size="cover">
+      </app-game-cover>
+    </div>
     <h2>{{ playing.game_name }}</h2>
     <p class="now">En ejecución</p>
     <div class="clock">{{ playClock() }}</div>
@@ -143,18 +156,30 @@
   <div class="detail-panel" (click)="$event.stopPropagation()">
     <header>
       <h2>{{ detailItem.game_name }}</h2>
-      <button class="btn-x" (click)="closeDetails()">✕</button>
+      <button class="btn-x" (click)="closeDetails()" aria-label="Cerrar">
+        <mat-icon class="gm-icon-sm">close</mat-icon>
+      </button>
     </header>
 
     <div class="detail-hero">
-      <img *ngIf="detailItem.game_image" [src]="detailItem.game_image" [alt]="detailItem.game_name">
+      <div class="detail-cover">
+        <app-game-cover
+          [src]="detailItem.game_image"
+          [alt]="detailItem.game_name"
+          [slug]="detailItem.game_slug"
+          [title]="detailItem.game_name"
+          size="cover">
+        </app-game-cover>
+      </div>
       <div>
         <p><span>Estado</span> {{ statusLabel(detailItem.install_status) }}</p>
         <p><span>Tiempo jugado</span> {{ formatPlaytime(detailItem.playtime_minutes) }}</p>
         <p *ngIf="buildInfo"><span>Build</span> v{{ buildInfo.version }} · {{ buildInfo.os }} · {{ formatSize(buildInfo.file_size_bytes) }}</p>
         <div class="detail-actions">
           <button *ngIf="detailItem.install_status === 'not_installed'" class="btn-install" (click)="install(detailItem)">Instalar</button>
-          <button *ngIf="detailItem.install_status === 'installed'" class="btn-play" (click)="play(detailItem); closeDetails()">▶ Jugar</button>
+          <button *ngIf="detailItem.install_status === 'installed'" class="btn-play" (click)="play(detailItem); closeDetails()">
+            <mat-icon class="gm-icon-sm">play_arrow</mat-icon> Jugar
+          </button>
         </div>
       </div>
     </div>
@@ -167,7 +192,9 @@
       <div *ngIf="detailLoading" class="state">Cargando logros...</div>
       <div class="ach-grid" *ngIf="!detailLoading">
         <article class="ach-card" *ngFor="let a of achievements" [class.on]="a.unlocked">
-          <div class="icon">{{ a.unlocked ? '🏆' : '🔒' }}</div>
+          <div class="icon">
+            <mat-icon class="gm-icon-md">{{ a.unlocked ? 'emoji_events' : 'lock' }}</mat-icon>
+          </div>
           <div>
             <h4>{{ a.name }}</h4>
             <p>{{ a.description }}</p>
@@ -184,7 +211,9 @@
   <div class="refund-modal" (click)="$event.stopPropagation()">
     <header class="rm-header">
       <h2>Solicitud de reembolso</h2>
-      <button class="btn-x" (click)="closeRefund()" aria-label="Cerrar">✕</button>
+      <button class="btn-x" (click)="closeRefund()" aria-label="Cerrar">
+        <mat-icon class="gm-icon-sm">close</mat-icon>
+      </button>
     </header>
 
     <div class="steps" *ngIf="refundStep !== 'done'">
@@ -195,8 +224,15 @@
 
     <div class="rm-body">
       <div class="game-row" *ngIf="refundStep !== 'done'">
-        <img *ngIf="refundItem.game_image" [src]="refundItem.game_image" [alt]="refundItem.game_name">
-        <div *ngIf="!refundItem.game_image" class="ph">🎮</div>
+        <div class="ph">
+          <app-game-cover
+            [src]="refundItem.game_image"
+            [alt]="refundItem.game_name"
+            [slug]="refundItem.game_slug"
+            [title]="refundItem.game_name"
+            size="thumb">
+          </app-game-cover>
+        </div>
         <div>
           <h3>{{ refundItem.game_name }}</h3>
           <p>Comprado el {{ formatDate(refundItem.purchased_at) }}</p>
@@ -242,11 +278,14 @@
       </section>
 
       <section *ngIf="refundStep === 'done'" class="step-panel done">
-        <div class="ok-icon">✓</div>
+        <div class="ok-icon"><mat-icon class="gm-icon-lg">check_circle</mat-icon></div>
         <h4>Reembolso aprobado</h4>
         <p>{{ refundSuccessMsg }}</p>
         <p class="big-amt">+{{ refundAmount | currency:'USD':'symbol':'1.2-2' }}</p>
-        <a routerLink="/my-wallet" class="link-wallet" (click)="closeRefund()">Ver mi cartera →</a>
+        <a routerLink="/my-wallet" class="link-wallet" (click)="closeRefund()">
+          Ver mi cartera
+          <mat-icon class="gm-icon-sm">arrow_forward</mat-icon>
+        </a>
       </section>
 
       <p class="err" *ngIf="refundError">{{ refundError }}</p>

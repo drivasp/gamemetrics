@@ -1,12 +1,14 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 import { CartService, Cart } from '../../services/cart.service';
+import { GameCoverComponent } from '../../shared/game-cover/game-cover.component';
 
 @Component({
   selector: 'app-cart',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatIconModule, GameCoverComponent],
   templateUrl: './cart.component.html',
   styleUrl: './cart.component.scss',
 })

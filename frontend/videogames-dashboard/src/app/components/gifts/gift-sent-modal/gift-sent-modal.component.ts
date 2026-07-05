@@ -1,12 +1,14 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 import { GiftModalService } from '../../../services/gift-modal.service';
+import { GameCoverComponent } from '../../../shared/game-cover/game-cover.component';
 
 @Component({
   selector: 'app-gift-sent-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatIconModule, GameCoverComponent],
   templateUrl: './gift-sent-modal.component.html',
   styleUrl: './gift-sent-modal.component.scss',
 })

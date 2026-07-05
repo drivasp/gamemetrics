@@ -3,23 +3,28 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService, User } from '../../../services/auth.service';
+import { MatIconModule } from '@angular/material/icon';
 import { WishlistService, WishlistItem } from '../../../services/wishlist.service';
+import { GameCoverComponent } from '../../../shared/game-cover/game-cover.component';
+import { LibraryService } from '../../../services/library.service';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatIconModule, GameCoverComponent],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })
 export class ProfileComponent implements OnInit {
   private auth = inject(AuthService);
   private wishlist = inject(WishlistService);
+  private library = inject(LibraryService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
 
   user: User | null = null;
   wishlistItems: WishlistItem[] = [];
+  purchasedCount = 0;
   loadingWishlist = true;
 
   editing = false;
@@ -35,6 +40,13 @@ export class ProfileComponent implements OnInit {
       error: () => {},
     });
     this._loadWishlist();
+    this.library.getLibrary().subscribe({
+      next: (items) => {
+        this.purchasedCount = items.length;
+        this.cdr.detectChanges();
+      },
+      error: () => {},
+    });
   }
 
   private _loadWishlist(): void {
@@ -102,6 +114,10 @@ export class ProfileComponent implements OnInit {
   }
 
   goToGame(slug: string): void {
+    if (!slug?.trim()) {
+      this.router.navigate(['/store']);
+      return;
+    }
     this.router.navigate(['/store/game', slug]);
   }
 

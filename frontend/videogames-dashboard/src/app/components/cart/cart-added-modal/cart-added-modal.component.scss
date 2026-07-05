@@ -39,8 +39,9 @@
   background: none;
   border: none;
   color: #8f98a0;
-  font-size: 1.1rem;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
   &:hover { color: #fff; }
 }
 
@@ -58,16 +59,8 @@
 .thumb {
   width: 116px;
   height: 65px;
-  object-fit: cover;
   border-radius: 2px;
-
-  &.ph {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #0e141b;
-    font-size: 1.6rem;
-  }
+  overflow: hidden;
 }
 
 .item-info h3 {

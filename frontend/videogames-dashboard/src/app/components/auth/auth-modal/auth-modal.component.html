@@ -3,8 +3,13 @@
 
     <!-- Header -->
     <div class="modal-header">
-      <span class="modal-logo">🎮 <strong>GameMetrics</strong> Store</span>
-      <button class="btn-close" (click)="close()">✕</button>
+      <span class="modal-logo">
+        <mat-icon class="gm-icon-md">sports_esports</mat-icon>
+        <strong>GameMetrics</strong> Store
+      </span>
+      <button class="btn-close" (click)="close()" aria-label="Cerrar">
+        <mat-icon class="gm-icon-sm">close</mat-icon>
+      </button>
     </div>
 
     <!-- Tabs -->

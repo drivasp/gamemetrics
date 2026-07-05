@@ -6,6 +6,8 @@ import json
 import os
 import subprocess
 import threading
+import urllib.error
+import urllib.request
 
 from flask import Flask, jsonify, request
 
@@ -29,8 +31,17 @@ jobs = {
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 STATE_FILE = os.path.join(BASE_DIR, "data", "stage", "semanas_cargadas.json")
 
+# Garantiza resolución DNS Docker aunque el subprocess no herede bien el entorno
+PINOT_CONTROLLER = os.getenv("PINOT_CONTROLLER", "http://pinot-controller:9000")
+PINOT_BROKER_URL = os.getenv("PINOT_BROKER_URL", "http://pinot-broker:8099")
+KAFKA_BOOTSTRAP  = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
+BASE_ETL_ENV = {
+    "PINOT_CONTROLLER": PINOT_CONTROLLER,
+    "PINOT_CONTROLLER_URL": PINOT_CONTROLLER,
+    "PINOT_BROKER_URL": PINOT_BROKER_URL,
+    "KAFKA_BOOTSTRAP_SERVERS": KAFKA_BOOTSTRAP,
+}
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def get_semanas_cargadas() -> list:
     try:
@@ -42,22 +53,66 @@ def get_semanas_cargadas() -> list:
     return []
 
 
+def _format_job_error(stdout: str, stderr: str) -> str:
+    text = (stderr or stdout or "").strip()
+    if not text:
+        return "Error desconocido"
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    for ln in reversed(lines):
+        if any(k in ln for k in ("ERROR", "Error", "Failed", "Traceback", "❌", "RuntimeError")):
+            return ln[:600]
+    return text[-600:]
+
+
+def _check_pinot_ready() -> str | None:
+    """None si Pinot responde; mensaje de error legible si no."""
+    try:
+        req = urllib.request.Request(
+            f"{PINOT_CONTROLLER.rstrip('/')}/health",
+            method="GET",
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            if resp.status == 200:
+                return None
+            return f"Pinot Controller respondió HTTP {resp.status}"
+    except Exception as exc:
+        return (
+            f"Pinot Controller no disponible en {PINOT_CONTROLLER}. "
+            "Levanta Pinot: docker compose up -d pinot-controller pinot-broker pinot-server. "
+            f"Detalle: {exc}"
+        )
+
+
 def _run(key, scripts, extra_env=None):
     jobs[key] = {"status": "running", "mensaje": "Ejecutando..."}
-    env = {**os.environ, "PYTHONUTF8": "1"}
+    env = {**os.environ, **BASE_ETL_ENV, "PYTHONUTF8": "1"}
     if extra_env:
         env.update(extra_env)
     for script in scripts:
+        lines: list[str] = []
         try:
-            r = subprocess.run(
+            proc = subprocess.Popen(
                 ["python", "-u", script],
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 text=True,
                 env=env,
                 cwd=BASE_DIR,
+                bufsize=1,
             )
-            if r.returncode != 0:
-                jobs[key] = {"status": "error", "mensaje": (r.stderr or r.stdout)[-300:].strip()}
+            assert proc.stdout is not None
+            for raw in proc.stdout:
+                line = raw.rstrip()
+                if not line:
+                    continue
+                lines.append(line)
+                jobs[key]["mensaje"] = line[:240]
+            proc.wait()
+            if proc.returncode != 0:
+                jobs[key] = {
+                    "status": "error",
+                    "mensaje": _format_job_error("\n".join(lines), ""),
+                }
                 return
         except Exception as e:
             jobs[key] = {"status": "error", "mensaje": str(e)}
@@ -95,6 +150,11 @@ def reload_dataset():
             "semana":    semana,
         })
 
+    pinot_err = _check_pinot_ready()
+    if pinot_err:
+        jobs["dataset"] = {"status": "error", "mensaje": pinot_err}
+        return jsonify({"mensaje": pinot_err, "pinot_down": True}), 503
+
     jobs["dataset"]["mensaje"] = f"Cargando semana {semana}..."
     env = {"SEMANA_TARGET": str(semana)}
     if force:
@@ -102,7 +162,8 @@ def reload_dataset():
 
     threading.Thread(
         target=_run,
-        args=("dataset", ["04_ingest_pinot.py"], env),
+        args=("dataset", ["04_ingest_pinot.py"]),
+        kwargs={"extra_env": env},
         daemon=True,
     ).start()
     return jsonify({"mensaje": "Iniciado", "semana": semana, "ya_existe": False})

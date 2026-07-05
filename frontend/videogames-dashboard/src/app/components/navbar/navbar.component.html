@@ -1,75 +1,192 @@
 <nav class="navbar" [class.store-mode]="isStoreArea">
+
   <div class="navbar-top">
-    <div class="navbar-brand">🎮 <span class="brand-accent">GameMetrics</span> S.A.</div>
+
+    <a class="navbar-brand" routerLink="/">
+
+      <mat-icon class="gm-icon-md brand-icon">sports_esports</mat-icon>
+
+      <span class="brand-accent">GameMetrics</span> S.A.
+
+    </a>
+
+
 
     <div class="navbar-links" *ngIf="!isStoreArea">
+
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
-      <a routerLink="/games" routerLinkActive="active">Games</a>
+
       <a routerLink="/empresa" routerLinkActive="active">Empresa</a>
+
       <a routerLink="/dimensiones" routerLinkActive="active">Dimensiones</a>
+
       <a routerLink="/store" routerLinkActive="active" class="store-link">Tienda</a>
+
     </div>
+
+
 
     <div class="steam-tabs" *ngIf="isStoreArea">
+
+      <a routerLink="/" class="dashboard-back-link">
+
+        <mat-icon class="gm-icon-sm">arrow_back</mat-icon>
+
+        Volver al Dashboard
+
+      </a>
+
       <a routerLink="/store" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">TIENDA</a>
+
       <a *ngIf="user" routerLink="/my-library" routerLinkActive="active">BIBLIOTECA</a>
+
       <a *ngIf="user" routerLink="/my-friends" routerLinkActive="active">AMIGOS</a>
+
       <a routerLink="/store/catalog" routerLinkActive="active">CATÁLOGO</a>
+
+      <a *ngIf="user" routerLink="/profile" routerLinkActive="active">LISTA DE DESEOS</a>
+
     </div>
 
+
+
     <div class="navbar-auth">
+
       <a *ngIf="user && isStoreArea" routerLink="/my-wallet" routerLinkActive="active" class="wallet-link">
-        💰 {{ walletBalance | currency:'USD':'symbol':'1.2-2' }}
+
+        <mat-icon class="gm-icon-sm">account_balance_wallet</mat-icon>
+
+        {{ walletBalance | currency:'USD':'symbol':'1.2-2' }}
+
       </a>
+
+
 
       <div *ngIf="user && isStoreArea" class="notif-menu">
-        <button class="notif-btn" (click)="toggleNotif($event)" [class.has-unread]="notifUnread > 0">
-          🔔
+
+        <button class="notif-btn" (click)="toggleNotif($event)" [class.has-unread]="notifUnread > 0" aria-label="Notificaciones">
+
+          <mat-icon class="gm-icon-md">notifications</mat-icon>
+
           <span class="notif-badge" *ngIf="notifUnread > 0">{{ notifUnread }}</span>
+
         </button>
+
         <div class="notif-dropdown" *ngIf="notifOpen">
+
           <header>
+
             <strong>Notificaciones</strong>
+
             <button *ngIf="notifUnread > 0" (click)="markAllRead()">Marcar leídas</button>
+
           </header>
+
           <div class="notif-item" *ngFor="let n of notifications" [class.unread]="!n.read" (click)="readOne(n)">
+
             <h4>{{ n.title }}</h4>
+
             <p>{{ n.body }}</p>
+
           </div>
+
           <p class="empty" *ngIf="!notifications.length">Sin notificaciones</p>
+
         </div>
+
       </div>
 
+
+
       <a *ngIf="user && isStoreArea" routerLink="/my-gifts" routerLinkActive="active" class="gifts-link"
+
          [class.has-pending]="giftPending > 0">
+
         Regalos
+
         <span class="gift-badge" *ngIf="giftPending > 0">{{ giftPending }}</span>
+
       </a>
+
       <a *ngIf="user" routerLink="/my-cart" routerLinkActive="active" class="cart-link steam-cart">
+
+        <mat-icon class="gm-icon-sm">shopping_cart</mat-icon>
+
         Carrito <span class="cart-badge" *ngIf="cartCount > 0">{{ cartCount }}</span>
+
       </a>
+
+
 
       <button *ngIf="!user" class="btn-login" (click)="openLogin()">Iniciar sesión</button>
 
+
+
       <div *ngIf="user" class="user-menu">
+
         <button class="user-trigger" (click)="toggleDropdown()">
+
           <img *ngIf="user.avatar" [src]="user.avatar" [alt]="user.display_name || user.email" class="nav-avatar">
+
           <div *ngIf="!user.avatar" class="nav-avatar-placeholder">{{ avatarLabel }}</div>
+
           <span class="user-name">{{ user.display_name || user.email }}</span>
-          <span class="chevron" [class.open]="dropdownOpen">▾</span>
+
+          <mat-icon class="gm-icon-sm chevron-icon" [class.open]="dropdownOpen">expand_more</mat-icon>
+
         </button>
 
+
+
         <div class="dropdown" *ngIf="dropdownOpen">
-          <button class="dropdown-item" (click)="goToProfile()">👤 Mi perfil</button>
-          <button class="dropdown-item" (click)="goToLibrary()">📚 Mi biblioteca</button>
-          <button class="dropdown-item" (click)="goFriends()">👥 Amigos</button>
-          <button class="dropdown-item" (click)="goSupport()">🛟 Soporte</button>
-          <button class="dropdown-item" (click)="goFamily()">👨‍👩‍👧‍👦 Familia</button>
-          <button class="dropdown-item" (click)="goPartner()">🏢 Publisher</button>
+
+          <button class="dropdown-item" (click)="goToProfile()">
+
+            <mat-icon>person</mat-icon> Mi perfil
+
+          </button>
+
+          <button class="dropdown-item" (click)="goToLibrary()">
+
+            <mat-icon>menu_book</mat-icon> Mi biblioteca
+
+          </button>
+
+          <button class="dropdown-item" (click)="goFriends()">
+
+            <mat-icon>group</mat-icon> Amigos
+
+          </button>
+
+          <button class="dropdown-item" (click)="goSupport()">
+
+            <mat-icon>support_agent</mat-icon> Soporte
+
+          </button>
+
+          <button class="dropdown-item" (click)="goFamily()">
+
+            <mat-icon>family_restroom</mat-icon> Familia
+
+          </button>
+
+          <button class="dropdown-item" (click)="goPartner()">
+
+            <mat-icon>business</mat-icon> Publisher
+
+          </button>
+
           <div class="dropdown-divider"></div>
+
           <button class="dropdown-item danger" (click)="logout()">Cerrar sesión</button>
+
         </div>
+
       </div>
+
     </div>
+
   </div>
+
 </nav>
+

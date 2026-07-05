@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { DimensionService, DimRecord } from '../../services/dimension.service';
 
 interface DimDef {
@@ -14,7 +15,7 @@ interface DimDef {
 @Component({
   selector: 'app-dimensiones',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatIconModule],
   templateUrl: './dimensiones.component.html',
   styleUrl: './dimensiones.component.scss',
 })
@@ -23,11 +24,11 @@ export class DimensionesComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   readonly dims: DimDef[] = [
-    { key: 'plataformas',     label: 'Plataformas',      icon: '🖥️',  desc: 'Plataformas únicas extraídas del dataset de videojuegos.' },
-    { key: 'generos',         label: 'Géneros',           icon: '🎭',  desc: 'Géneros únicos de videojuegos.' },
-    { key: 'desarrolladores', label: 'Desarrolladores',   icon: '💻',  desc: 'Estudios desarrolladores únicos del dataset.' },
-    { key: 'publicadores',    label: 'Publicadores',      icon: '📦',  desc: 'Empresas publicadoras únicas del dataset.' },
-    { key: 'esrb',            label: 'Clasificaciones ESRB', icon: '🔞', desc: 'Clasificaciones de contenido ESRB.', hasEsrb: true },
+    { key: 'plataformas',     label: 'Plataformas',      icon: 'devices',  desc: 'Plataformas únicas extraídas del dataset de videojuegos.' },
+    { key: 'generos',         label: 'Géneros',           icon: 'category',  desc: 'Géneros únicos de videojuegos.' },
+    { key: 'desarrolladores', label: 'Desarrolladores',   icon: 'code',  desc: 'Estudios desarrolladores únicos del dataset.' },
+    { key: 'publicadores',    label: 'Publicadores',      icon: 'inventory_2',  desc: 'Empresas publicadoras únicas del dataset.' },
+    { key: 'esrb',            label: 'Clasificaciones ESRB', icon: 'eighteen_up_rating', desc: 'Clasificaciones de contenido ESRB.', hasEsrb: true },
   ];
 
   selected: DimDef = this.dims[0];

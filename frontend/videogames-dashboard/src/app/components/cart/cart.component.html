@@ -1,7 +1,13 @@
 <div class="cart-page">
   <header class="cart-header">
-    <h1>🛒 Tu carrito</h1>
-    <button class="btn-link" (click)="goStore()">← Seguir comprando</button>
+    <h1>
+      <mat-icon class="gm-icon-md">shopping_cart</mat-icon>
+      Tu carrito
+    </h1>
+    <button class="btn-link" (click)="goStore()">
+      <mat-icon class="gm-icon-sm">arrow_back</mat-icon>
+      Seguir comprando
+    </button>
   </header>
 
   <div *ngIf="loading" class="state">Cargando carrito...</div>
@@ -14,14 +20,22 @@
   <div *ngIf="!loading && cart && cart.items.length > 0" class="cart-layout">
     <section class="cart-items">
       <article class="cart-row" *ngFor="let item of cart.items">
-        <img *ngIf="item.game_image" [src]="item.game_image" [alt]="item.game_name" class="thumb">
-        <div *ngIf="!item.game_image" class="thumb placeholder">🎮</div>
+        <div class="thumb">
+          <app-game-cover
+            [src]="item.game_image"
+            [alt]="item.game_name"
+            [slug]="item.game_slug"
+            [title]="item.game_name"
+            size="thumb">
+          </app-game-cover>
+        </div>
         <div class="info">
           <h3>{{ item.game_name }}</h3>
-          <p class="slug">{{ item.game_slug }}</p>
         </div>
         <div class="price">${{ item.line_total.toFixed(2) }}</div>
-        <button class="btn-remove" (click)="remove(item.product_id)" title="Quitar">✕</button>
+        <button class="btn-remove" (click)="remove(item.product_id)" title="Quitar" aria-label="Quitar">
+          <mat-icon class="gm-icon-sm">close</mat-icon>
+        </button>
       </article>
     </section>
 

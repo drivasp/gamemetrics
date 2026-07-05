@@ -3,12 +3,14 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { forkJoin, timeout, catchError, of } from 'rxjs';
 import { StoreService, StoreGame } from '../../../services/store.service';
+import { MatIconModule } from '@angular/material/icon';
 import { StoreGameCardComponent } from '../store-game-card/store-game-card.component';
+import { GameCoverComponent } from '../../../shared/game-cover/game-cover.component';
 
 @Component({
   selector: 'app-store-home',
   standalone: true,
-  imports: [CommonModule, StoreGameCardComponent],
+  imports: [CommonModule, StoreGameCardComponent, MatIconModule, GameCoverComponent],
   templateUrl: './store-home.component.html',
   styleUrl: './store-home.component.scss',
 })
@@ -19,6 +21,7 @@ export class StoreHomeComponent implements OnInit {
 
   loading = true;
   featured: StoreGame[] = [];
+  newReleases: StoreGame[] = [];
   popular: StoreGame[] = [];
   freeGames: StoreGame[] = [];
   spotIndex = 0;
@@ -35,11 +38,13 @@ export class StoreHomeComponent implements OnInit {
   ngOnInit(): void {
     forkJoin({
       featured: this.svc.getFeatured().pipe(catchError(() => of([]))),
+      newReleases: this.svc.getNewReleases().pipe(catchError(() => of([]))),
       popular: this.svc.getPopular().pipe(catchError(() => of([]))),
       freeGames: this.svc.getFreeGames().pipe(catchError(() => of([]))),
     }).pipe(timeout(15000)).subscribe({
-      next: ({ featured, popular, freeGames }) => {
+      next: ({ featured, newReleases, popular, freeGames }) => {
         this.featured = featured;
+        this.newReleases = newReleases;
         this.popular = popular;
         this.freeGames = freeGames;
         this.loading = false;

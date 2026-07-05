@@ -1,29 +1,38 @@
 <div class="modal-backdrop" *ngIf="item$ | async as item" (click)="close()">
   <div class="steam-modal" (click)="$event.stopPropagation()">
     <header class="modal-header">
-      <h2>¡Añadido a tu carro!</h2>
-      <button class="btn-close" (click)="close()" aria-label="Cerrar">✕</button>
+      <h2>Artículo añadido al carrito</h2>
+      <button class="btn-close" (click)="close()" aria-label="Cerrar">
+        <mat-icon class="gm-icon-sm">close</mat-icon>
+      </button>
     </header>
 
     <div class="modal-body">
       <div class="item-row">
-        <img *ngIf="item.game_image" [src]="item.game_image" [alt]="item.game_name" class="thumb">
-        <div *ngIf="!item.game_image" class="thumb ph">🎮</div>
+        <div class="thumb">
+          <app-game-cover
+            [src]="item.game_image"
+            [alt]="item.game_name"
+            [slug]="item.game_slug"
+            [title]="item.game_name"
+            size="thumb">
+          </app-game-cover>
+        </div>
         <div class="item-info">
           <h3>{{ item.game_name }}</h3>
-          <p class="sub">Para mi cuenta</p>
+          <p class="sub">{{ item.game_slug }}</p>
         </div>
         <div class="item-price">
           <span class="discount" *ngIf="item.discount_pct && item.discount_pct > 0">-{{ item.discount_pct }}%</span>
-          <span class="orig" *ngIf="item.original_price">{{ item.original_price | currency:'USD':'symbol':'1.2-2' }}</span>
-          <span class="final">{{ item.unit_price | currency:'USD':'symbol':'1.2-2' }}</span>
+          <span class="orig" *ngIf="item.original_price && item.discount_pct">$ {{ item.original_price!.toFixed(2) }}</span>
+          <span class="final">$ {{ item.unit_price.toFixed(2) }}</span>
         </div>
       </div>
     </div>
 
     <footer class="modal-footer">
       <button class="btn-secondary" (click)="continueShopping()">Seguir comprando</button>
-      <button class="btn-primary" (click)="viewCart()">Ver mi carro ({{ cartCount }})</button>
+      <button class="btn-primary" (click)="viewCart()">Ver mi carro ({{ cartCount$ | async }})</button>
     </footer>
   </div>
 </div>

@@ -53,7 +53,13 @@ etl/data/stage/json_segments/
 !etl/data/stage/semanas_cargadas.json
 !etl/pinot_schemas/
 
-# ── PocketBase (legacy — eliminado del flujo activo) ─────────
+# ── E2E Playwright ───────────────────────────────────────────
+e2e/node_modules/
+e2e/test-results/
+e2e/playwright-report/
+e2e/blob-report/
+e2e/.cache/
+
 pocketbase/
 pocketbase.exe
 

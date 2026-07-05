@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 import { GameService, VideoGame, CountDTO } from '../../services/game.service';
+import { MatIconModule } from '@angular/material/icon';
 import { EtlService, EtlStatus } from '../../services/etl.service';
 import * as d3 from 'd3';
 
@@ -12,7 +13,7 @@ type EtlJobKey = 'dataset' | 'empresa' | 'dimensiones' | 'realtime' | 'catalogo'
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, MatIconModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -50,6 +51,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   };
 
   @ViewChild('treemapContainer') treemapContainer!: ElementRef;
+  @ViewChild('etlLogTerminal') etlLogTerminal?: ElementRef<HTMLDivElement>;
 
   // KPIs
   totalGames = 0;
@@ -117,6 +119,19 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   semanaYaCargada(n: number): boolean {
     return this.semanasStatus.includes(n);
+  }
+
+  getConfirmReemplazoMsg(): string {
+    const n = this.confirmSemana ?? this.selectedSemanaETL;
+    const posteriores = this.semanasStatus.filter((s) => s > n).length;
+    let msg =
+      `Reemplazar semana ${n} reconstruye Pinot con semanas 1–${n} ` +
+      `(Pinot no permite borrar una semana suelta).`;
+    if (posteriores > 0) {
+      msg += ` Se eliminarán ${posteriores} semana(s) posterior(es) del estado.`;
+    }
+    msg += n === 1 ? ' Tiempo estimado: ~30 s.' : ` Tiempo estimado: ~${Math.ceil(n * 0.4)} min.`;
+    return msg;
   }
 
   loadSemanasStatus(): void {
@@ -205,7 +220,11 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private logEntry(msg: string): void {
     const time = new Date().toTimeString().slice(0, 8);
-    this.etlLog = [`[${time}] ${msg}`, ...this.etlLog].slice(0, 80);
+    this.etlLog = [...this.etlLog, `[${time}] ${msg}`].slice(-200);
+    setTimeout(() => {
+      const el = this.etlLogTerminal?.nativeElement;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
   }
 
   loadEtlStatus(): void {
@@ -245,15 +264,15 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
             const curr = s[key].status;
             const msg  = s[key].mensaje;
             if (prev === 'running' && curr === 'ok') {
-              this.logEntry(`✓ ${key} completado.`);
+              this.logEntry(`[OK] ${key} completado.`);
               if (key === 'dataset') {
                 this.loadStaticData();
                 this.loadSemanaData();
                 this.loadSemanasStatus(); // refrescar qué semanas están cargadas
               }
             } else if (prev === 'running' && curr === 'error') {
-              this.logEntry(`✗ ${key} falló: ${msg}`);
-            } else if (curr === 'running' && msg && msg !== this.etlStatus[key].mensaje) {
+              this.logEntry(`[ERR] ${key} falló: ${msg}`);
+            } else if (curr === 'running' && msg && msg !== 'Ejecutando...' && msg !== this.etlStatus[key].mensaje) {
               this.logEntry(`  ${msg}`);
             }
             this.prevStatus[key] = curr;
@@ -285,22 +304,28 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         if (res.ya_existe && !force) {
           // Semana ya existe — pedir confirmación sin iniciar nada
           this.confirmSemana = semana;
-          this.logEntry(`⚠ Semana ${semana} ya está cargada. Confirma para reemplazarla.`);
+          this.logEntry(`[WARN] Semana ${semana} ya cargada. ${this.getConfirmReemplazoMsg()}`);
           this.cdr.detectChanges();
           return;
         }
         // Iniciar job — update optimista
         this.confirmSemana = null;
         this.etlStatus.dataset = { status: 'running', mensaje: `Cargando semana ${semana}...` };
-        this.logEntry(`▶ Cargando semana ${semana} → Pinot...`);
+        this.logEntry(`[RUN] Cargando semana ${semana} → Pinot...`);
         this.prevStatus.dataset = 'running';
         this.cdr.detectChanges();
         this.startPolling();
       },
       error: (err) => {
+        if (err?.status === 503 && err?.error?.mensaje) {
+          this.etlStatus.dataset = { status: 'error', mensaje: err.error.mensaje };
+          this.logEntry(`[ERR] Pinot no disponible: ${err.error.mensaje}`);
+          this.cdr.detectChanges();
+          return;
+        }
         if (err?.status !== 409) {
           this.etlStatus.dataset = { status: 'error', mensaje: 'Error al iniciar' };
-          this.logEntry('✗ Error al iniciar Dataset.');
+          this.logEntry('[ERR] Error al iniciar Dataset.');
           this.cdr.detectChanges();
         }
       },
@@ -319,7 +344,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   reloadEmpresa(): void {
     if (this.etlStatus.empresa.status === 'running') return;
     this.etlStatus.empresa = { status: 'running', mensaje: 'Iniciando...' };
-    this.logEntry('▶ Iniciando recarga de Tablas Empresa → PocketBase...');
+    this.logEntry('[RUN] Iniciando recarga de Tablas Empresa → PocketBase...');
     this.prevStatus.empresa = 'running';
     this.cdr.detectChanges();
     this.startPolling();
@@ -328,7 +353,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (err) => {
         if (err?.status !== 409) {
           this.etlStatus.empresa = { status: 'error', mensaje: 'Error al iniciar' };
-          this.logEntry('✗ Error al iniciar Tablas Empresa.');
+          this.logEntry('[ERR] Error al iniciar Tablas Empresa.');
           this.cdr.detectChanges();
         }
       },
@@ -338,7 +363,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   reloadDimensions(): void {
     if (this.etlStatus.dimensiones.status === 'running') return;
     this.etlStatus.dimensiones = { status: 'running', mensaje: 'Iniciando...' };
-    this.logEntry('▶ Iniciando creación de Dimensiones → Pinot...');
+    this.logEntry('[RUN] Iniciando creación de Dimensiones → Pinot...');
     this.prevStatus.dimensiones = 'running';
     this.cdr.detectChanges();
     this.startPolling();
@@ -347,7 +372,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (err) => {
         if (err?.status !== 409) {
           this.etlStatus.dimensiones = { status: 'error', mensaje: 'Error al iniciar' };
-          this.logEntry('✗ Error al iniciar Dimensiones.');
+          this.logEntry('[ERR] Error al iniciar Dimensiones.');
           this.cdr.detectChanges();
         }
       },
@@ -357,7 +382,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   createRealtimeTables(): void {
     if (this.etlStatus.realtime?.status === 'running') return;
     this.etlStatus.realtime = { status: 'running', mensaje: 'Iniciando...' };
-    this.logEntry('▶ Fase 1: Crear tablas REALTIME comercio...');
+    this.logEntry('[RUN] Fase 1: Crear tablas REALTIME comercio...');
     this.prevStatus.realtime = 'running';
     this.cdr.detectChanges();
     this.startPolling();
@@ -367,7 +392,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   reloadCatalogo(): void {
     if (this.etlStatus.catalogo?.status === 'running') return;
     this.etlStatus.catalogo = { status: 'running', mensaje: 'Iniciando...' };
-    this.logEntry('▶ Fase 1: Catálogo comercial OFFLINE...');
+    this.logEntry('[RUN] Fase 1: Catálogo comercial OFFLINE...');
     this.prevStatus.catalogo = 'running';
     this.cdr.detectChanges();
     this.startPolling();
@@ -377,7 +402,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   seedPromociones(): void {
     if (this.etlStatus.promociones?.status === 'running') return;
     this.etlStatus.promociones = { status: 'running', mensaje: 'Iniciando...' };
-    this.logEntry('▶ Fase 1: Promociones estilo Steam...');
+    this.logEntry('[RUN] Fase 1: Promociones estilo Steam...');
     this.prevStatus.promociones = 'running';
     this.cdr.detectChanges();
     this.startPolling();

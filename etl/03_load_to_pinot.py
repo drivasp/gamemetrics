@@ -4,7 +4,7 @@ import json
 import os
 
 PARQUET_PATH = "data/stage/videogames.parquet"
-PINOT_CONTROLLER = "http://localhost:9000"
+PINOT_CONTROLLER = os.getenv("PINOT_CONTROLLER", "http://pinot-controller:9000")
 SEGMENT_DIR = "data/stage/segments"
 
 def load():

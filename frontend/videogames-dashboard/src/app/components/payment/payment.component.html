@@ -3,7 +3,9 @@
 
   <ng-container *ngIf="!loading && cart">
     <header class="pay-header">
-      <button class="back" (click)="back()">← Volver al carrito</button>
+      <button class="back" (click)="back()">
+        <mat-icon class="gm-icon-sm">arrow_back</mat-icon> Volver al carrito
+      </button>
       <h1>Continuar al pago</h1>
       <p class="sub">Pago seguro estilo Steam · GameMetrics Store</p>
     </header>
@@ -12,7 +14,15 @@
       <section class="items">
         <h2>Tu carrito</h2>
         <article class="pay-row" *ngFor="let item of cart.items">
-          <img *ngIf="item.game_image" [src]="item.game_image" [alt]="item.game_name">
+          <div class="pay-thumb">
+            <app-game-cover
+              [src]="item.game_image"
+              [alt]="item.game_name"
+              [slug]="item.game_slug"
+              [title]="item.game_name"
+              size="thumb">
+            </app-game-cover>
+          </div>
           <div class="meta">
             <h3>{{ item.game_name }}</h3>
             <p>Para mi cuenta · Windows</p>
@@ -83,8 +93,9 @@
               <span>Completa la compra sin usar la cartera</span>
             </div>
           </label>
-          <a class="topup-link" routerLink="/my-wallet" *ngIf="!walletCanPay">
-            Recargar cartera (necesitas al menos {{ finalTotal | currency:'USD':'symbol':'1.2-2' }}) →
+          <a class="topup-link back" routerLink="/my-wallet" *ngIf="!walletCanPay">
+            Recargar cartera (necesitas al menos {{ finalTotal | currency:'USD':'symbol':'1.2-2' }})
+            <mat-icon class="gm-icon-sm">arrow_forward</mat-icon>
           </a>
         </div>
 

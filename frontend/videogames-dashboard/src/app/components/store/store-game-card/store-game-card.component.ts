@@ -1,12 +1,14 @@
 import { Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 import { StoreGame } from '../../../services/store.service';
+import { GameCoverComponent } from '../../../shared/game-cover/game-cover.component';
 
 @Component({
   selector: 'app-game-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatIconModule, GameCoverComponent],
   templateUrl: './store-game-card.component.html',
   styleUrl: './store-game-card.component.scss',
 })

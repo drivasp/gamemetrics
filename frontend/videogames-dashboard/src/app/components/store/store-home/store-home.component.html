@@ -9,7 +9,9 @@
 
     <!-- Spotlight carousel estilo Steam -->
     <section class="spotlight" *ngIf="featured.length > 0">
-      <button class="spot-arrow left" (click)="prevSpot()" *ngIf="featured.length > 1">‹</button>
+      <button class="spot-arrow left" (click)="prevSpot()" *ngIf="featured.length > 1" aria-label="Anterior">
+        <mat-icon class="gm-icon-md">chevron_left</mat-icon>
+      </button>
       <div class="spot-track">
         <article
           class="spot-card"
@@ -24,9 +26,14 @@
             [src]="g.trailer_url"
             autoplay muted loop playsinline>
           </video>
-          <img
-            *ngIf="g.background_image && (!g.trailer_url || spotHoverSlug !== g.slug)"
-            [src]="g.background_image" [alt]="g.name">
+          <app-game-cover
+            *ngIf="!g.trailer_url || spotHoverSlug !== g.slug"
+            [src]="g.background_image"
+            [alt]="g.name"
+            [slug]="g.slug"
+            [title]="g.name"
+            size="cover">
+          </app-game-cover>
           <div class="spot-info">
             <h3>{{ g.name }}</h3>
             <div class="spot-price">
@@ -37,7 +44,9 @@
           </div>
         </article>
       </div>
-      <button class="spot-arrow right" (click)="nextSpot()" *ngIf="featured.length > 1">›</button>
+      <button class="spot-arrow right" (click)="nextSpot()" *ngIf="featured.length > 1" aria-label="Siguiente">
+        <mat-icon class="gm-icon-md">chevron_right</mat-icon>
+      </button>
       <div class="spot-dots" *ngIf="featured.length > 1">
         <button
           *ngFor="let g of featured; let i = index"
@@ -47,19 +56,24 @@
       </div>
     </section>
 
-    <section class="section" *ngIf="featured.length > 0">
+    <section class="section" *ngIf="newReleases.length > 0">
       <div class="section-header">
-        <h2 class="section-title">Destacados y recomendados</h2>
+        <h2 class="section-title">Nuevos lanzamientos</h2>
+        <button class="btn-link" (click)="goToCatalog()">
+          Ver todos <mat-icon class="gm-icon-sm">arrow_forward</mat-icon>
+        </button>
       </div>
       <div class="featured-grid">
-        <app-game-card *ngFor="let g of featured | slice:0:8" [game]="g" class="featured-card"></app-game-card>
+        <app-game-card *ngFor="let g of newReleases | slice:0:8" [game]="g" class="featured-card"></app-game-card>
       </div>
     </section>
 
     <section class="section" *ngIf="popular.length > 0">
       <div class="section-header">
         <h2 class="section-title">Más populares</h2>
-        <button class="btn-link" (click)="goToCatalog()">Ver todos →</button>
+        <button class="btn-link" (click)="goToCatalog()">
+          Ver todos <mat-icon class="gm-icon-sm">arrow_forward</mat-icon>
+        </button>
       </div>
       <div class="popular-scroll">
         <app-game-card *ngFor="let g of popular" [game]="g" class="popular-card"></app-game-card>
@@ -69,7 +83,9 @@
     <section class="section free-section" *ngIf="freeGames.length > 0">
       <div class="section-header">
         <h2 class="section-title">Gratis para jugar</h2>
-        <button class="btn-link" (click)="goToCatalog('free')">Ver todos →</button>
+        <button class="btn-link" (click)="goToCatalog('free')">
+          Ver todos <mat-icon class="gm-icon-sm">arrow_forward</mat-icon>
+        </button>
       </div>
       <div class="cards-grid">
         <app-game-card *ngFor="let g of freeGames" [game]="g"></app-game-card>

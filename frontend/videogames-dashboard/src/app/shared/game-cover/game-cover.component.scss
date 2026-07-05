@@ -1,0 +1,56 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.gm-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.gm-cover-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 55%, #16213e 100%);
+  border: 1px solid rgba(233, 69, 96, 0.25);
+  box-sizing: border-box;
+
+  svg {
+    width: 42%;
+    max-width: 72px;
+    height: auto;
+    opacity: 0.85;
+    flex-shrink: 0;
+  }
+
+  &.size-thumb svg {
+    max-width: 36px;
+  }
+
+  &.size-inline svg {
+    max-width: 48px;
+  }
+}
+
+.gm-cover-title {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  text-align: center;
+  line-height: 1.25;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}

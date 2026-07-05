@@ -2,6 +2,7 @@ import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 import { timeout, catchError, of } from 'rxjs';
 import { CommunityService } from '../../services/community.service';
 import { LibraryService } from '../../services/library.service';
@@ -9,7 +10,7 @@ import { LibraryService } from '../../services/library.service';
 @Component({
   selector: 'app-family',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, MatIconModule],
   templateUrl: './family.component.html',
   styleUrl: './family.component.scss',
 })

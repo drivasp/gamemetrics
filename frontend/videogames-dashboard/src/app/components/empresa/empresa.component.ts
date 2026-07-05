@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { EmpresaService, PbPage } from '../../services/empresa.service';
 
 export interface FieldDef {
@@ -22,7 +23,7 @@ interface TableDef {
 @Component({
   selector: 'app-empresa',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatIconModule],
   templateUrl: './empresa.component.html',
   styleUrl: './empresa.component.scss',
 })
@@ -31,7 +32,7 @@ export class EmpresaComponent implements OnInit {
 
   readonly tables: TableDef[] = [
     {
-      key: 'plataformas', label: 'Plataformas', icon: '🖥️',
+      key: 'plataformas', label: 'Plataformas', icon: 'devices',
       desc: 'Plataformas de videojuegos disponibles en el catálogo.',
       fields: [
         { name: 'nombre',           label: 'Nombre',           type: 'text',   required: true },
@@ -42,7 +43,7 @@ export class EmpresaComponent implements OnInit {
       ],
     },
     {
-      key: 'generos', label: 'Géneros', icon: '🎭',
+      key: 'generos', label: 'Géneros', icon: 'category',
       desc: 'Géneros de videojuegos y su popularidad en el dataset.',
       fields: [
         { name: 'nombre',      label: 'Nombre',      type: 'text',   required: true },
@@ -51,7 +52,7 @@ export class EmpresaComponent implements OnInit {
       ],
     },
     {
-      key: 'clasificaciones_esrb', label: 'Clasificaciones ESRB', icon: '🔞',
+      key: 'clasificaciones_esrb', label: 'Clasificaciones ESRB', icon: 'eighteen_up_rating',
       desc: 'Clasificaciones de contenido por edad de la ESRB.',
       fields: [
         { name: 'codigo',      label: 'Código',      type: 'text',   required: true, placeholder: 'E, E10+, T, M, AO, RP' },
@@ -61,7 +62,7 @@ export class EmpresaComponent implements OnInit {
       ],
     },
     {
-      key: 'desarrolladores', label: 'Desarrolladores', icon: '💻',
+      key: 'desarrolladores', label: 'Desarrolladores', icon: 'code',
       desc: 'Top 300 estudios desarrolladores extraídos del dataset.',
       fields: [
         { name: 'nombre',    label: 'Nombre',    type: 'text',  required: true },
@@ -72,7 +73,7 @@ export class EmpresaComponent implements OnInit {
       ],
     },
     {
-      key: 'publicadores', label: 'Publicadores', icon: '📦',
+      key: 'publicadores', label: 'Publicadores', icon: 'inventory_2',
       desc: 'Top 200 empresas publicadoras extraídas del dataset.',
       fields: [
         { name: 'nombre',    label: 'Nombre',    type: 'text',  required: true },
@@ -83,7 +84,7 @@ export class EmpresaComponent implements OnInit {
       ],
     },
     {
-      key: 'empleados', label: 'Empleados', icon: '👤',
+      key: 'empleados', label: 'Empleados', icon: 'person',
       desc: 'Personal de GameMetrics S.A. por departamento.',
       fields: [
         { name: 'nombre',        label: 'Nombre',        type: 'text',   required: true },
@@ -96,7 +97,7 @@ export class EmpresaComponent implements OnInit {
       ],
     },
     {
-      key: 'contratos', label: 'Contratos', icon: '📄',
+      key: 'contratos', label: 'Contratos', icon: 'description',
       desc: 'Contratos activos y vencidos con publicadores.',
       fields: [
         { name: 'publicador_nombre', label: 'Publicador',     type: 'text' },
@@ -109,7 +110,7 @@ export class EmpresaComponent implements OnInit {
       ],
     },
     {
-      key: 'catalogo_distribucion', label: 'Catálogo de Distribución', icon: '🛒',
+      key: 'catalogo_distribucion', label: 'Catálogo de Distribución', icon: 'shopping_cart',
       desc: 'Top 500 juegos por rating en el catálogo de GameMetrics.',
       fields: [
         { name: 'juego_nombre',        label: 'Juego',          type: 'text',   required: true },
@@ -122,7 +123,7 @@ export class EmpresaComponent implements OnInit {
       ],
     },
     {
-      key: 'campanas_marketing', label: 'Campañas de Marketing', icon: '📣',
+      key: 'campanas_marketing', label: 'Campañas de Marketing', icon: 'campaign',
       desc: 'Campañas de marketing por juego y canal.',
       fields: [
         { name: 'nombre',       label: 'Nombre campaña', type: 'text',   required: true },
@@ -137,7 +138,7 @@ export class EmpresaComponent implements OnInit {
       ],
     },
     {
-      key: 'evaluaciones_analiticas', label: 'Evaluaciones Analíticas', icon: '📊',
+      key: 'evaluaciones_analiticas', label: 'Evaluaciones Analíticas', icon: 'analytics',
       desc: 'Evaluaciones internas de analistas sobre juegos clave.',
       fields: [
         { name: 'juego_nombre',         label: 'Juego',           type: 'text',   required: true },

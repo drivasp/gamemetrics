@@ -68,6 +68,29 @@ body {
   gap: 0.35rem;
   flex: 1;
   justify-content: center;
+  align-items: center;
+
+  .dashboard-back-link {
+    color: #66c0f4;
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid rgba(102, 192, 244, 0.35);
+    border-radius: 4px;
+    margin-right: 0.75rem;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    &:hover {
+      color: #fff;
+      background: rgba(102, 192, 244, 0.15);
+    }
+  }
 
   a {
     color: #8f98a0;
@@ -98,12 +121,20 @@ body {
     padding: 0.35rem 0.75rem;
     border-radius: 4px;
     transition: background 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 
     &:hover { background: rgba(255,255,255,0.08); }
     &.active { color: #66c0f4 !important; }
   }
 
-  .wallet-link { color: #beee11 !important; }
+  .wallet-link {
+    color: #beee11 !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
 
   .gifts-link {
     position: relative;
@@ -142,8 +173,10 @@ body {
   .notif-btn {
     position: relative;
     background: none; border: none; color: #c7d5e0;
-    font-size: 1.05rem; cursor: pointer; padding: 0.3rem 0.55rem;
+    cursor: pointer; padding: 0.3rem 0.55rem;
     border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
     &:hover, &.has-unread { background: rgba(255,255,255,0.08); }
   }
 
@@ -194,6 +227,10 @@ body {
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover { opacity: 0.9; }
 
   span.brand-accent {
     background: linear-gradient(90deg, #6366f1, #a78bfa);
@@ -237,6 +274,9 @@ body {
     &.cart-link {
       color: #beee11;
       font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
       .cart-badge {
         background: #4c6b22;
         color: #beee11;
@@ -285,9 +325,18 @@ body {
   text-overflow: ellipsis; white-space: nowrap;
 }
 
-.chevron {
-  font-size: 0.7rem; color: #666; transition: transform 0.15s;
+.chevron-icon {
+  transition: transform 0.15s;
   &.open { transform: rotate(180deg); }
+}
+
+.navbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+
+  .brand-icon { color: #e94560; }
 }
 
 .dropdown {
@@ -298,13 +347,24 @@ body {
 }
 
 .dropdown-item {
-  display: block; width: 100%; text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%; text-align: left;
   background: none; border: none; color: #ccc;
   font-size: 0.85rem; padding: 11px 16px; cursor: pointer;
   transition: background 0.12s;
   &:hover:not(:disabled) { background: #0f3460; color: #fff; }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
   &.danger { color: #e94560; &:hover { background: rgba(233,69,96,0.12); } }
+
+  .mat-icon {
+    font-size: 1.1rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    color: #888;
+    flex-shrink: 0;
+  }
 }
 
 .dropdown-divider { border: none; border-top: 1px solid #2a2a3e; margin: 4px 0; }
@@ -321,3 +381,31 @@ body {
   background: transparent !important;
   color: var(--text-secondary) !important;
 }
+
+.back, .btn-link.back-style {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.mat-icon {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1.25rem;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+}
+
+.gm-icon-sm { font-size: 1rem !important; width: 1rem !important; height: 1rem !important; }
+.gm-icon-md { font-size: 1.25rem !important; width: 1.25rem !important; height: 1.25rem !important; }
+.gm-icon-lg { font-size: 1.75rem !important; width: 1.75rem !important; height: 1.75rem !important; }
+.gm-icon-xl { font-size: 2.25rem !important; width: 2.25rem !important; height: 2.25rem !important; }
