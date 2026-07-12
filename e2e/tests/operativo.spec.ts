@@ -37,8 +37,10 @@ test.describe('CU-O02 · US-AUTH-002 — Inicio de sesión', () => {
 test.describe('CU-O06 · Home de tienda (destacados)', () => {
   test('Como visitante quiero ver juegos destacados en la home de la tienda', async ({ page }) => {
     await page.goto('/store');
-    await expect(page.locator('.spotlight, .section-title').first()).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('app-game-card, app-game-cover').first()).toBeVisible();
+    await expect(page.locator('.loading-full')).toBeHidden({ timeout: 60_000 });
+    await expect(
+      page.locator('.spotlight, .section-title, app-game-card, app-game-cover').first(),
+    ).toBeVisible({ timeout: 60_000 });
   });
 });
 

@@ -116,7 +116,6 @@ services:
       PINOT_CONTROLLER_URL: http://pinot-controller:9000
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       FRONTEND_URL: http://localhost:4000
-      RAWG_API_KEY: ${RAWG_API_KEY:-}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}

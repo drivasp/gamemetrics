@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "test": "playwright test",
+    "test:video": "playwright test video-10-cu",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed"
   },

@@ -31,6 +31,9 @@ async def stop_producer() -> None:
 
 
 async def kafka_send(topic: str, key: str, value: dict) -> None:
+    global _producer
+    if _producer is None:
+        await start_producer()
     if _producer is None:
         raise RuntimeError("Kafka producer no disponible")
     await _producer.send_and_wait(topic, key=key, value=value)

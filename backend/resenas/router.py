@@ -1,3 +1,4 @@
+import math
 import time
 from typing import Annotated
 
@@ -13,6 +14,14 @@ from shared.kafka_producer import kafka_send
 from shared.pinot_utils import to_bool, to_ms
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
+
+
+def _safe_float(value, default: float = 0.0) -> float:
+    try:
+        n = float(value)
+        return n if math.isfinite(n) else default
+    except (TypeError, ValueError):
+        return default
 
 
 async def _owns_game(user_id: str, game_slug: str) -> bool:
@@ -96,7 +105,7 @@ async def list_reviews(
         f"SELECT AVG(rating), COUNT(*) FROM fact_reviews "
         f"WHERE game_slug = '{safe}' AND deleted = false"
     )
-    avg = float(agg[0][0] or 0) if agg else 0.0
+    avg = _safe_float(agg[0][0]) if agg else 0.0
     total = int(agg[0][1] or 0) if agg else 0
     return ReviewPageDTO(reviews=reviews, avg_rating=round(avg, 2), total=total)
 

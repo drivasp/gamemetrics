@@ -41,7 +41,7 @@ export class StoreHomeComponent implements OnInit {
       newReleases: this.svc.getNewReleases().pipe(catchError(() => of([]))),
       popular: this.svc.getPopular().pipe(catchError(() => of([]))),
       freeGames: this.svc.getFreeGames().pipe(catchError(() => of([]))),
-    }).pipe(timeout(15000)).subscribe({
+    }).pipe(timeout(60000)).subscribe({
       next: ({ featured, newReleases, popular, freeGames }) => {
         this.featured = featured;
         this.newReleases = newReleases;
