@@ -24,15 +24,32 @@ export class ReportViewerComponent implements OnInit {
   error = '';
   statusFilter = '';
   partnerId = '';
+  week = 1;
   csvBusy = false;
+
+  readonly partnerFilterCodes = new Set(['GM-C02', 'GM-S12', 'GM-S13']);
+  readonly weekFilterCodes = new Set(['GM-C04', 'GM-C05', 'GM-C06', 'GM-C07']);
+  readonly weeks = Array.from({ length: 17 }, (_, i) => i + 1);
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((pm) => {
       this.code = (pm.get('code') || '').toUpperCase();
       this.statusFilter = this.code === 'GM-S03' ? 'open' : this.code === 'GM-S01' ? 'pending' : '';
       this.partnerId = '';
+      this.week = 1;
       this.reload();
     });
+  }
+
+  private buildOpts(): { status?: string; partner_id?: string; week?: number } {
+    const opts: { status?: string; partner_id?: string; week?: number } = {};
+    if (this.code === 'GM-S01') opts.status = this.statusFilter || 'pending';
+    if (this.code === 'GM-S03') opts.status = this.statusFilter || 'open';
+    if (this.partnerFilterCodes.has(this.code) && this.partnerId) {
+      opts.partner_id = this.partnerId;
+    }
+    if (this.weekFilterCodes.has(this.code)) opts.week = this.week || 1;
+    return opts;
   }
 
   reload(): void {
@@ -42,13 +59,8 @@ export class ReportViewerComponent implements OnInit {
     this.payload = null;
     this.cdr.detectChanges();
 
-    const opts: { status?: string; partner_id?: string } = {};
-    if (this.code === 'GM-S01') opts.status = this.statusFilter || 'pending';
-    if (this.code === 'GM-S03') opts.status = this.statusFilter || 'open';
-    if (this.code === 'GM-C02' && this.partnerId) opts.partner_id = this.partnerId;
-
-    this.reports.getReport(this.code, opts).pipe(
-      timeout(20000),
+    this.reports.getReport(this.code, this.buildOpts()).pipe(
+      timeout(45000),
       catchError((err) => {
         this.error = err?.error?.detail || 'No se pudo generar el informe.';
         this.loading = false;
@@ -62,6 +74,9 @@ export class ReportViewerComponent implements OnInit {
       if (res.filters?.['partner_id'] !== undefined) {
         this.partnerId = String(res.filters['partner_id'] || '');
       }
+      if (res.filters?.['week'] !== undefined) {
+        this.week = Number(res.filters['week']) || 1;
+      }
       this.loading = false;
       this.cdr.detectChanges();
     });
@@ -74,12 +89,8 @@ export class ReportViewerComponent implements OnInit {
   exportCsv(): void {
     if (!this.code || this.csvBusy) return;
     this.csvBusy = true;
-    const opts: { status?: string; partner_id?: string } = {};
-    if (this.code === 'GM-S01') opts.status = this.statusFilter || 'pending';
-    if (this.code === 'GM-S03') opts.status = this.statusFilter || 'open';
-    if (this.code === 'GM-C02' && this.partnerId) opts.partner_id = this.partnerId;
 
-    this.reports.downloadCsv(this.code, opts).subscribe({
+    this.reports.downloadCsv(this.code, this.buildOpts()).subscribe({
       next: (blob) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

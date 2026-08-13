@@ -16,7 +16,7 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 
 @router.get("/catalog")
 async def list_reports(authorization: Annotated[str | None, Header()] = None):
-    """Catálogo de los 6 informes (evita choque con la ruta SPA /reports)."""
+    """Catálogo de informes (evita choque con la ruta SPA /reports)."""
     await require_roles(authorization, "admin")
     return catalog_payload()
 
@@ -26,13 +26,14 @@ async def get_report(
     code: str,
     status: str | None = Query(None),
     partner_id: str | None = Query(None),
+    week: int | None = Query(None, ge=1, le=17),
     authorization: Annotated[str | None, Header()] = None,
 ):
     await require_roles(authorization, "admin")
     if not get_meta(code):
         raise HTTPException(404, f"Informe no encontrado: {code}")
     try:
-        return await build_report(code, status=status, partner_id=partner_id)
+        return await build_report(code, status=status, partner_id=partner_id, week=week)
     except KeyError:
         raise HTTPException(404, f"Informe no encontrado: {code}")
     except Exception as e:
@@ -44,13 +45,14 @@ async def export_report_csv(
     code: str,
     status: str | None = Query(None),
     partner_id: str | None = Query(None),
+    week: int | None = Query(None, ge=1, le=17),
     authorization: Annotated[str | None, Header()] = None,
 ):
     await require_roles(authorization, "admin")
     if not get_meta(code):
         raise HTTPException(404, f"Informe no encontrado: {code}")
     try:
-        payload = await build_report(code, status=status, partner_id=partner_id)
+        payload = await build_report(code, status=status, partner_id=partner_id, week=week)
     except Exception as e:
         raise HTTPException(502, f"No se pudo generar el CSV: {e}")
     body = to_csv(payload)

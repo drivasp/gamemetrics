@@ -48,7 +48,7 @@
         </label>
       </div>
 
-      <div class="filters" *ngIf="code === 'GM-C02'">
+      <div class="filters" *ngIf="partnerFilterCodes.has(code)">
         <label>
           Estudio
           <select [(ngModel)]="partnerId" (ngModelChange)="reload()">
@@ -56,6 +56,15 @@
             <option *ngFor="let partner of p.partners" [value]="partner.partner_id">
               {{ partner.company_name }}
             </option>
+          </select>
+        </label>
+      </div>
+
+      <div class="filters" *ngIf="weekFilterCodes.has(code)">
+        <label>
+          Semana ETL
+          <select [(ngModel)]="week" (ngModelChange)="reload()">
+            <option *ngFor="let w of weeks" [ngValue]="w">Semana {{ w }}</option>
           </select>
         </label>
       </div>
@@ -110,7 +119,7 @@
     <ng-template #empty>
       <div class="empty">
         <p>No hay registros para los filtros seleccionados.</p>
-        <p class="hint" *ngIf="code === 'GM-C02' && !partnerId">Selecciona un estudio para ver sus ganancias.</p>
+        <p class="hint" *ngIf="partnerFilterCodes.has(code) && !partnerId">Selecciona un estudio para cargar el informe.</p>
       </div>
     </ng-template>
 

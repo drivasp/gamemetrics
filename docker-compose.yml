@@ -153,6 +153,7 @@ services:
       MINIO_BUCKET: gamemetrics-builds
       MINIO_SECURE: "false"
       LOCAL_BUILD_DIR: /app/static/builds
+      ETL_API_URL: http://etl-api:5000
     restart: unless-stopped
     volumes:
       - backend_static:/app/static
@@ -163,6 +164,8 @@ services:
   etl-api:
     build: ./etl
     container_name: etl-api
+    ports:
+      - "5000:5000"
     volumes:
       - ./etl/data:/etl/data
     environment:

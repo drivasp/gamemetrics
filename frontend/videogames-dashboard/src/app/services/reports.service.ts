@@ -68,28 +68,32 @@ export class ReportsService {
     );
   }
 
-  getReport(code: string, opts?: { status?: string; partner_id?: string }): Observable<ReportPayload> {
+  getReport(
+    code: string,
+    opts?: { status?: string; partner_id?: string; week?: number | string },
+  ): Observable<ReportPayload> {
     let params = new HttpParams();
     if (opts?.status) params = params.set('status', opts.status);
     if (opts?.partner_id) params = params.set('partner_id', opts.partner_id);
+    if (opts?.week !== undefined && opts?.week !== null && opts?.week !== '') {
+      params = params.set('week', String(opts.week));
+    }
     return this.http.get<ReportPayload>(`${this.base}/view/${code}`, {
       headers: this.headers(),
       params,
     });
   }
 
-  exportCsvUrl(code: string, opts?: { status?: string; partner_id?: string }): string {
-    const q = new URLSearchParams();
-    if (opts?.status) q.set('status', opts.status);
-    if (opts?.partner_id) q.set('partner_id', opts.partner_id);
-    const qs = q.toString();
-    return `${this.base}/view/${code}/export.csv${qs ? '?' + qs : ''}`;
-  }
-
-  downloadCsv(code: string, opts?: { status?: string; partner_id?: string }): Observable<Blob> {
+  downloadCsv(
+    code: string,
+    opts?: { status?: string; partner_id?: string; week?: number | string },
+  ): Observable<Blob> {
     let params = new HttpParams();
     if (opts?.status) params = params.set('status', opts.status);
     if (opts?.partner_id) params = params.set('partner_id', opts.partner_id);
+    if (opts?.week !== undefined && opts?.week !== null && opts?.week !== '') {
+      params = params.set('week', String(opts.week));
+    }
     return this.http.get(`${this.base}/view/${code}/export.csv`, {
       headers: this.headers(),
       params,
