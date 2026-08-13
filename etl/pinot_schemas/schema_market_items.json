@@ -1,0 +1,18 @@
+{
+  "schemaName": "market_items",
+  "dimensionFieldSpecs": [
+    {"name": "item_id", "dataType": "STRING"},
+    {"name": "owner_user_id", "dataType": "STRING"},
+    {"name": "game_id", "dataType": "STRING"},
+    {"name": "item_name", "dataType": "STRING"},
+    {"name": "item_type", "dataType": "STRING"},
+    {"name": "status", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"},
+    {"name": "updated_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["item_id"]
+}

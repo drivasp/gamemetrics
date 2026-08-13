@@ -116,6 +116,7 @@ interface AdminDashboard {
             <select [(ngModel)]="payoutMethod">
               <option value="manual">Manual</option>
               <option value="stripe_connect">Stripe Connect</option>
+              <option value="sandbox_fail">Sandbox fail (test)</option>
             </select>
             <button type="button" (click)="submitPayout()" [disabled]="payoutBusy">
               {{ payoutBusy ? 'Procesando…' : 'Marcar pagado' }}
@@ -125,10 +126,29 @@ interface AdminDashboard {
           <p class="err" *ngIf="payoutErr">{{ payoutErr }}</p>
           <article *ngFor="let pay of payouts" class="row">
             <div>
-              <strong>{{ pay.method }} · {{ pay.partner_id }}</strong>
+              <strong>{{ pay.status }} · {{ pay.method }} · {{ pay.partner_id }}</strong>
               <p>{{ pay.reference }}</p>
             </div>
             <span class="net">{{ pay.amount | currency:'USD':'symbol':'1.2-2' }}</span>
+          </article>
+        </section>
+
+        <section class="card">
+          <h2>Auditoría / fraude</h2>
+          <article *ngFor="let a of auditItems" class="row">
+            <div>
+              <strong>{{ a.action }}</strong>
+              <p>{{ a.entity_type }} {{ a.entity_id }} · actor {{ a.actor_id }}</p>
+            </div>
+            <span>{{ a.amount }}</span>
+          </article>
+          <p class="empty" *ngIf="!auditItems.length">Sin eventos de auditoría.</p>
+          <h3>Fraud events</h3>
+          <article *ngFor="let f of fraudEvents" class="row">
+            <div>
+              <strong>{{ f.action }} · score {{ f.risk_score }}</strong>
+              <p>{{ f.reason }} · {{ f.user_id }}</p>
+            </div>
           </article>
         </section>
 
@@ -229,6 +249,8 @@ export class AdminComponent implements OnInit {
   payoutBusy = false;
   payoutMsg = '';
   payoutErr = '';
+  auditItems: any[] = [];
+  fraudEvents: any[] = [];
 
   private headers() {
     return new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken()}` });
@@ -252,6 +274,14 @@ export class AdminComponent implements OnInit {
         this.http.get<{ items: any[] }>('/admin/game-claims?status=pending', { headers }).subscribe({
           next: c => { this.claims = c.items || []; this.cdr.detectChanges(); },
           error: () => { this.claims = []; this.cdr.detectChanges(); },
+        });
+        this.http.get<{ items: any[]; fraud_events: any[] }>('/admin/finance/audit?limit=30', { headers }).subscribe({
+          next: a => {
+            this.auditItems = a.items || [];
+            this.fraudEvents = a.fraud_events || [];
+            this.cdr.detectChanges();
+          },
+          error: () => this.cdr.detectChanges(),
         });
         this.cdr.detectChanges();
       },

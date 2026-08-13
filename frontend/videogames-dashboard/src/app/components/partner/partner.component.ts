@@ -30,6 +30,7 @@ export class PartnerComponent implements OnInit, OnDestroy {
   revenue: any[] = [];
   earnings: any = null;
   ledger: any[] = [];
+  financialStatement: any = null;
   payouts: any[] = [];
   subscription: any = null;
   plans: any[] = [];
@@ -135,6 +136,7 @@ export class PartnerComponent implements OnInit, OnDestroy {
         this.revenue = res.revenue || [];
         this.earnings = res.earnings || null;
         this.ledger = res.ledger || [];
+        this.financialStatement = res.financial_statement || null;
         this.payouts = res.payouts || [];
         this.subscription = res.subscription || null;
         this.plans = res.plans || [];

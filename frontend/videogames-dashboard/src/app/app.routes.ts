@@ -19,6 +19,7 @@ import { FamilyComponent } from './components/family/family.component';
 import { AdminComponent } from './components/admin/admin.component';
 import { ReportsCatalogComponent } from './components/reports/reports-catalog.component';
 import { ReportViewerComponent } from './components/reports/report-viewer.component';
+import { MarketplaceComponent } from './components/marketplace/marketplace.component';
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
 import { opsGuard } from './guards/ops.guard';
@@ -38,6 +39,7 @@ export const routes: Routes = [
   { path: 'payment', component: PaymentComponent, canActivate: [authGuard] },
   { path: 'payment/success', component: PaymentSuccessComponent, canActivate: [authGuard] },
   { path: 'my-wallet', component: WalletComponent, canActivate: [authGuard] },
+  { path: 'my-marketplace', component: MarketplaceComponent, canActivate: [authGuard] },
   { path: 'my-gifts', component: GiftsComponent, canActivate: [authGuard] },
   { path: 'my-friends', component: FriendsComponent, canActivate: [authGuard] },
   { path: 'my-support', component: SupportComponent, canActivate: [authGuard] },

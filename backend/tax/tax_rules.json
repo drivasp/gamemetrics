@@ -1,0 +1,23 @@
+{
+  "_meta": {
+    "note": "DEMO / configurable rates for digital goods. NOT legal advice. Mark jurisdictions pending_legal_config when unknown.",
+    "source": "Approximate public VAT/GST rates for planning demos"
+  },
+  "default_country": "US",
+  "jurisdictions": {
+    "US": {"tax_name": "Sales tax (digital exempt demo)", "rate_pct": 0.0, "tax_included_in_price": false, "currency": "USD", "pricing_region": "US"},
+    "CA": {"tax_name": "GST", "rate_pct": 5.0, "tax_included_in_price": false, "currency": "USD", "pricing_region": "US"},
+    "MX": {"tax_name": "IVA", "rate_pct": 16.0, "tax_included_in_price": false, "currency": "USD", "pricing_region": "LATAM"},
+    "EC": {"tax_name": "IVA", "rate_pct": 15.0, "tax_included_in_price": false, "currency": "USD", "pricing_region": "LATAM"},
+    "CO": {"tax_name": "IVA", "rate_pct": 19.0, "tax_included_in_price": false, "currency": "USD", "pricing_region": "LATAM"},
+    "AR": {"tax_name": "IVA", "rate_pct": 21.0, "tax_included_in_price": false, "currency": "USD", "pricing_region": "LATAM"},
+    "CL": {"tax_name": "IVA", "rate_pct": 19.0, "tax_included_in_price": false, "currency": "USD", "pricing_region": "LATAM"},
+    "PE": {"tax_name": "IGV", "rate_pct": 18.0, "tax_included_in_price": false, "currency": "USD", "pricing_region": "LATAM"},
+    "BR": {"tax_name": "ISS (demo 0%)", "rate_pct": 0.0, "tax_included_in_price": false, "currency": "USD", "pricing_region": "LATAM", "status": "pending_legal_config"},
+    "ES": {"tax_name": "IVA", "rate_pct": 21.0, "tax_included_in_price": true, "currency": "EUR", "pricing_region": "EU"},
+    "FR": {"tax_name": "TVA", "rate_pct": 20.0, "tax_included_in_price": true, "currency": "EUR", "pricing_region": "EU"},
+    "DE": {"tax_name": "MwSt", "rate_pct": 19.0, "tax_included_in_price": true, "currency": "EUR", "pricing_region": "EU"},
+    "IT": {"tax_name": "IVA", "rate_pct": 22.0, "tax_included_in_price": true, "currency": "EUR", "pricing_region": "EU"},
+    "GB": {"tax_name": "VAT", "rate_pct": 20.0, "tax_included_in_price": true, "currency": "GBP", "pricing_region": "EU"}
+  }
+}

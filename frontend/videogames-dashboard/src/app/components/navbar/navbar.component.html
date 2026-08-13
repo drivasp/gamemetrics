@@ -89,6 +89,10 @@
         </div>
       </div>
 
+      <a *ngIf="user && isStoreArea" routerLink="/my-marketplace" routerLinkActive="active" class="wallet-link" title="Marketplace">
+        <mat-icon class="gm-icon-sm">storefront</mat-icon>
+      </a>
+
       <a *ngIf="user && isStoreArea" routerLink="/my-wallet" routerLinkActive="active" class="wallet-link">
 
         <mat-icon class="gm-icon-sm">account_balance_wallet</mat-icon>

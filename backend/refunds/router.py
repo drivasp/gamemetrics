@@ -47,6 +47,18 @@ async def request_refund(
     if to_bool(refunded):
         raise HTTPException(409, "Esta compra ya fue reembolsada")
 
+    # Idempotencia adicional: si ya existe un refund aprobado para esta compra
+    prior = await pinot_query(
+        f"SELECT refund_id, status, amount FROM fact_refunds "
+        f"WHERE purchase_id = '{esc(body.purchase_id)}' AND deleted = false "
+        f"AND status = 'approved' LIMIT 1"
+    )
+    if prior:
+        raise HTTPException(
+            409,
+            f"Reembolso ya procesado (refund_id={prior[0][0]}). Operación idempotente rechazada.",
+        )
+
     purchased_ms = to_ms(purchased_at)
     now_ms = int(time.time() * 1000)
     if now_ms - purchased_ms > REFUND_WINDOW_MS:

@@ -242,6 +242,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.isStoreArea = url.startsWith('/store') || url.startsWith('/my-cart')
       || url.startsWith('/my-library') || url.startsWith('/payment')
       || url.startsWith('/my-wallet') || url.startsWith('/my-gifts')
+      || url.startsWith('/my-marketplace')
       || url.startsWith('/my-friends') || url.startsWith('/my-support')
       || url.startsWith('/my-partner') || url.startsWith('/my-family')
       || url.startsWith('/profile') || url.startsWith('/admin');

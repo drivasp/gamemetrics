@@ -136,6 +136,21 @@
         <p class="empty" *ngIf="!games.length">Sin juegos todavía.</p>
       </section>
 
+      <section class="card wide" *ngIf="financialStatement">
+        <h2>Estado financiero (tipo Steam monthly report)</h2>
+        <div class="stats">
+          <div class="stat"><span>Gross</span><strong>{{ financialStatement.gross_revenue | currency:'USD':'symbol':'1.2-2' }}</strong></div>
+          <div class="stat"><span>Refunds</span><strong>{{ financialStatement.refunds | currency:'USD':'symbol':'1.2-2' }}</strong></div>
+          <div class="stat"><span>Chargebacks</span><strong>{{ financialStatement.chargebacks | currency:'USD':'symbol':'1.2-2' }}</strong></div>
+          <div class="stat"><span>AGR</span><strong class="green">{{ financialStatement.adjusted_gross_revenue | currency:'USD':'symbol':'1.2-2' }}</strong></div>
+          <div class="stat"><span>Comisión plataforma</span><strong>{{ financialStatement.platform_commission | currency:'USD':'symbol':'1.2-2' }}</strong></div>
+          <div class="stat"><span>Tu ingreso</span><strong class="green">{{ financialStatement.publisher_earnings | currency:'USD':'symbol':'1.2-2' }}</strong></div>
+          <div class="stat"><span>Disponible payout</span><strong>{{ financialStatement.balance_available | currency:'USD':'symbol':'1.2-2' }}</strong></div>
+          <div class="stat"><span>Pagado</span><strong>{{ financialStatement.balance_paid_out | currency:'USD':'symbol':'1.2-2' }}</strong></div>
+        </div>
+        <p class="hint">{{ financialStatement.taxes_note }}</p>
+      </section>
+
       <section class="card wide">
         <h2>Ingresos por juego (ledger real)</h2>
         <article *ngFor="let r of revenue" class="row">
@@ -152,7 +167,7 @@
         <h2>Movimientos del ledger</h2>
         <article *ngFor="let e of ledger" class="row">
           <div>
-            <strong>{{ e.entry_type === 'refund' ? 'Reembolso' : 'Venta' }} · {{ e.game_name }}</strong>
+            <strong>{{ e.entry_type }} · {{ e.game_name }}</strong>
             <p>{{ e.product_id }} · orden {{ e.order_id }}</p>
           </div>
           <span [class.green]="e.publisher_net_amount >= 0">

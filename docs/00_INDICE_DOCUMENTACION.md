@@ -6,6 +6,21 @@ Documentación para entrega académica (TA/GA), video demostrativo y evolución 
 
 ---
 
+## Documentos de plataforma comercial (empresa real)
+
+| Archivo | Contenido |
+|---------|-----------|
+| [BUSINESS_MODEL_PLATFORM.md](./BUSINESS_MODEL_PLATFORM.md) | Modelo de negocio, Steam research, escenarios, arquitectura |
+| [INFORME_EMPRESARIAL_COMPLETO.md](./INFORME_EMPRESARIAL_COMPLETO.md) | Informe cierre checklist |
+| [COMPETITIVE_BENCHMARK.md](./COMPETITIVE_BENCHMARK.md) | Steam / Epic / GOG / consolas |
+| [SYSTEM_FLOWS.md](./SYSTEM_FLOWS.md) | Diagramas Mermaid de flujos |
+| [OPEN_DEPENDENCIES.md](./OPEN_DEPENDENCIES.md) | Decisiones legales/fiscales/proveedor aún abiertas |
+| [INFORME_FINAL_PLATAFORMA.md](./INFORME_FINAL_PLATAFORMA.md) | Informe ejecutivo del análisis + implementación |
+| [FASE_DINERO_LEDGER.md](./FASE_DINERO_LEDGER.md) | Ledger B2B, Direct fee, chargebacks |
+| `../finance/` | Modelo financiero reproducible (JSON/CSV) |
+
+---
+
 ## Documentos principales
 
 | # | Archivo | Contenido | Uso |

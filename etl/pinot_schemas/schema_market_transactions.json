@@ -1,0 +1,31 @@
+{
+  "schemaName": "market_transactions",
+  "dimensionFieldSpecs": [
+    {"name": "tx_id", "dataType": "STRING"},
+    {"name": "listing_id", "dataType": "STRING"},
+    {"name": "item_id", "dataType": "STRING"},
+    {"name": "buyer_user_id", "dataType": "STRING"},
+    {"name": "seller_user_id", "dataType": "STRING"},
+    {"name": "game_id", "dataType": "STRING"},
+    {"name": "item_name", "dataType": "STRING"},
+    {"name": "currency", "dataType": "STRING"},
+    {"name": "status", "dataType": "STRING"},
+    {"name": "idempotency_key", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "gross_amount", "dataType": "DOUBLE"},
+    {"name": "platform_fee", "dataType": "DOUBLE"},
+    {"name": "game_fee", "dataType": "DOUBLE"},
+    {"name": "seller_net", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {
+      "name": "created_at",
+      "dataType": "LONG",
+      "format": "1:MILLISECONDS:EPOCH",
+      "granularity": "1:MILLISECONDS"
+    }
+  ],
+  "primaryKeyColumns": ["tx_id"]
+}

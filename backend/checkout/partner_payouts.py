@@ -44,8 +44,8 @@ def effective_entry_bucket(entry: dict[str, Any], now_ms: int | None = None) -> 
     et = entry.get("entry_type") or ""
     if et == "payout":
         return "paid_out"
-    if et == "refund":
-        return "available"  # reduce available immediately
+    if et in ("refund", "chargeback", "direct_fee", "direct_fee_recoup"):
+        return "available"  # ajustan saldo disponible de inmediato
     created = int(entry.get("created_at") or 0)
     if et == "sale" and (now - created) < HOLD_MS:
         return "pending"
@@ -264,7 +264,21 @@ async def create_payout(
     method: str = "manual",
     reference: str = "",
     notes: str = "",
+    idempotency_key: str = "",
+    force_fail: bool = False,
 ) -> dict[str, Any]:
+    from fraud.service import FraudDetectionService
+
+    fraud = FraudDetectionService().evaluate(
+        user_id=created_by,
+        action="payout_attempt",
+        entity_type="partner",
+        entity_id=partner_id,
+        amount=amount,
+    )
+    if fraud["action"] == "block":
+        raise ValueError(f"Payout bloqueado por fraude: {fraud['reason']}")
+
     bal = await partner_balance(partner_id)
     amt = _money(amount)
     if amt <= 0:
@@ -277,6 +291,38 @@ async def create_payout(
             f"${bal['balance_pending']:.2f} aún en hold ({bal['hold_days']} días)."
         )
 
+    # Idempotencia: misma clave o misma referencia no duplica payout pagado
+    key = (idempotency_key or reference or "").strip()
+    if key:
+        for p in await list_partner_payouts(partner_id, limit=100):
+            if key and (p.get("reference") == key or f"idem:{key}" in str(p.get("notes") or "")):
+                return p
+
+    # Sandbox: simular fallo sin debitar saldo
+    if force_fail or method == "sandbox_fail":
+        now = int(time.time() * 1000)
+        payout_id = uuid.uuid4().hex[:15]
+        row = {
+            "payout_id": payout_id,
+            "partner_id": partner_id,
+            "currency": "USD",
+            "method": method,
+            "status": "failed",
+            "reference": reference or f"FAIL-{payout_id}",
+            "created_by": created_by,
+            "stripe_transfer_id": "",
+            "notes": (notes or "") + " | sandbox_fail",
+            "amount": amt,
+            "created_at": now,
+            "paid_at": 0,
+            "deleted": False,
+        }
+        _PAYOUT_CACHE[payout_id] = row
+        _PAYOUTS_BY_PARTNER.setdefault(partner_id, set()).add(payout_id)
+        await kafka_send("fact_partner_payouts", payout_id, row)
+        # NO ledger debit — balance intact
+        return row
+
     stripe_transfer_id = ""
     method = (method or "manual").lower()
     if method == "stripe_connect":
@@ -288,13 +334,17 @@ async def create_payout(
         import stripe
 
         stripe.api_key = STRIPE_SECRET
-        transfer = stripe.Transfer.create(
-            amount=int(round(amt * 100)),
-            currency="usd",
-            destination=acct["stripe_account_id"],
-            transfer_group=f"partner_{partner_id}",
-            metadata={"partner_id": partner_id},
-        )
+        transfer_kwargs = {
+            "amount": int(round(amt * 100)),
+            "currency": "usd",
+            "destination": acct["stripe_account_id"],
+            "transfer_group": f"partner_{partner_id}",
+            "metadata": {"partner_id": partner_id, "idempotency_key": key or ""},
+        }
+        if key:
+            transfer = stripe.Transfer.create(**transfer_kwargs, idempotency_key=key[:255])
+        else:
+            transfer = stripe.Transfer.create(**transfer_kwargs)
         stripe_transfer_id = transfer.id
         if not reference:
             reference = transfer.id
@@ -310,7 +360,7 @@ async def create_payout(
         "reference": reference or f"PAY-{payout_id}",
         "created_by": created_by,
         "stripe_transfer_id": stripe_transfer_id,
-        "notes": notes or "",
+        "notes": (notes or "") + (f" | idem:{key}" if key and "idem:" not in (notes or "") else ""),
         "amount": amt,
         "created_at": now,
         "paid_at": now,
@@ -342,6 +392,19 @@ async def create_payout(
         "created_at": now,
         "deleted": False,
     })
+    try:
+        from checkout.financial_audit import audit_event
+
+        audit_event(
+            actor_id=created_by,
+            action="create_payout",
+            entity_type="payout",
+            entity_id=payout_id,
+            amount=amt,
+            after=row,
+        )
+    except Exception:
+        pass
     return row
 
 

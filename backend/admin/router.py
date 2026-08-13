@@ -24,9 +24,11 @@ class SetRoleDTO(BaseModel):
 class AdminPayoutDTO(BaseModel):
     partner_id: str
     amount: float = Field(gt=0)
-    method: str = "manual"  # manual | stripe_connect
+    method: str = "manual"  # manual | stripe_connect | sandbox_fail
     reference: str = ""
     notes: str = ""
+    force_fail: bool = False
+    idempotency_key: str = ""
 
 
 @router.get("/health")
@@ -136,6 +138,8 @@ async def admin_create_payout(
             method=body.method,
             reference=body.reference,
             notes=body.notes,
+            idempotency_key=body.idempotency_key,
+            force_fail=body.force_fail,
         )
         return {
             "ok": True,
@@ -201,7 +205,7 @@ async def admin_approve_game_claim(
     partner_game_id: str,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    await require_roles(authorization, "admin")
+    _, admin_id, _ = await require_roles(authorization, "admin")
     from social.partner_game_claims import cache_partner_game, get_claim
 
     row = get_claim(partner_game_id)
@@ -236,10 +240,38 @@ async def admin_approve_game_claim(
     updated = {**row, "submission_status": "approved"}
     await kafka_send("fact_partner_games", partner_game_id, updated)
     cache_partner_game(updated)
+
+    fee_entry = None
+    try:
+        from checkout.direct_fee import charge_publication_fee, publication_fee_policy
+        from checkout.financial_audit import audit_event
+
+        fee_entry = await charge_publication_fee(
+            partner_id=str(updated["partner_id"]),
+            product_id=str(updated["product_id"]),
+            game_name=str(updated.get("game_name") or ""),
+            charged_by=admin_id,
+        )
+        audit_event(
+            actor_id=admin_id,
+            action="approve_claim_and_charge_publication_fee",
+            entity_type="partner_game",
+            entity_id=partner_game_id,
+            amount=(fee_entry or {}).get("platform_fee_amount"),
+            after=updated,
+            meta={"fee_policy": publication_fee_policy()},
+        )
+    except Exception as exc:
+        print(f"[direct_fee] ERROR claim={partner_game_id}: {exc}")
+
     return {
         "ok": True,
         "claim": updated,
-        "message": "Claim aprobado. Las ventas de este juego ya se atribuyen al publisher.",
+        "publication_fee": fee_entry,
+        "message": (
+            "Claim aprobado. Las ventas de este juego ya se atribuyen al publisher."
+            + (" Tarifa de publicación registrada en ledger." if fee_entry else "")
+        ),
     }
 
 
@@ -274,3 +306,113 @@ async def admin_reject_game_claim(
     await kafka_send("fact_partner_games", partner_game_id, updated)
     cache_partner_game(updated)
     return {"ok": True, "claim": updated, "message": "Claim rechazado."}
+
+
+class ChargebackDTO(BaseModel):
+    payment_id: str
+    order_id: str
+    product_id: str
+    buyer_user_id: str = ""
+    game_name: str = ""
+    amount: float = Field(gt=0)
+    reason: str = "payment_dispute"
+
+
+@router.post("/chargebacks", status_code=201)
+async def admin_record_chargeback(
+    body: ChargebackDTO,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    """
+    Registra un chargeback en el ledger (idempotente).
+    Integración automática Stripe Disputes: pendiente de STRIPE_WEBHOOK_SECRET + decisión ops.
+    """
+    _, admin_id, _ = await require_roles(authorization, "admin")
+    from checkout.chargebacks import record_chargeback_ledger
+    from checkout.financial_audit import audit_event
+
+    try:
+        entry = await record_chargeback_ledger(
+            payment_id=body.payment_id,
+            order_id=body.order_id,
+            buyer_user_id=body.buyer_user_id or admin_id,
+            product_id=body.product_id,
+            game_name=body.game_name,
+            amount=body.amount,
+            reason=body.reason,
+            created_by=admin_id,
+        )
+    except Exception as e:
+        raise HTTPException(400, str(e))
+    if not entry:
+        raise HTTPException(404, "No hay partner atribuido para este producto; chargeback no registrado en B2B ledger.")
+    audit_event(
+        actor_id=admin_id,
+        action="record_chargeback",
+        entity_type="chargeback",
+        entity_id=entry.get("ledger_entry_id", body.payment_id),
+        amount=-abs(body.amount),
+        after=entry,
+    )
+    return {
+        "ok": True,
+        "entry": entry,
+        "message": "Chargeback registrado. Reduce AGR y saldo del publisher.",
+        "open_dependency": (
+            "Fee del PSP, disputa automática vía webhook y hold de cuenta "
+            "requieren contrato con procesador + decisión empresarial."
+        ),
+    }
+
+
+@router.get("/partners/{partner_id}/statement")
+async def admin_partner_statement(
+    partner_id: str,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    await require_roles(authorization, "admin")
+    from checkout.financial_statement import build_partner_financial_statement
+
+    return await build_partner_financial_statement(partner_id)
+
+
+@router.get("/finance/policy")
+async def admin_finance_policy(authorization: Annotated[str | None, Header()] = None):
+    await require_roles(authorization, "admin")
+    from checkout.direct_fee import publication_fee_policy
+    from checkout.revenue_share import MODE, example_steam_math
+    import os
+
+    return {
+        "revenue_share_mode": MODE,
+        "publication_fee": publication_fee_policy(),
+        "payout_min_usd": float(os.getenv("PAYOUT_MIN_USD", "1")),
+        "payout_hold_ms": int(os.getenv("PAYOUT_HOLD_MS", "0")),
+        "steam_tier_examples": {
+            "1_000": example_steam_math(1_000),
+            "100_000": example_steam_math(100_000),
+            "1_000_000": example_steam_math(1_000_000),
+            "10_000_000": example_steam_math(10_000_000),
+            "50_000_000": example_steam_math(50_000_000),
+            "60_000_000": example_steam_math(60_000_000),
+        },
+        "tier_note": (
+            "Los ejemplos 30/25/20 son el modelo Steam reportado por la industria "
+            "(anuncio Valve 2018). Activar con REVENUE_SHARE_MODE=steam_tiers."
+        ),
+    }
+
+
+@router.get("/finance/audit")
+async def admin_finance_audit(
+    limit: int = 50,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    await require_roles(authorization, "admin")
+    from checkout.financial_audit import list_audit
+    from fraud.service import FraudDetectionService
+
+    return {
+        "items": list_audit(limit=min(200, max(1, limit))),
+        "fraud_events": FraudDetectionService.list_events(limit=min(100, max(1, limit))),
+    }

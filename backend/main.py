@@ -29,6 +29,9 @@ from saves.router import router as saves_router
 from regional.router import router as locale_router
 from admin.router import router as admin_router
 from reports.router import router as reports_router
+from tax.router import router as tax_router
+from marketplace.router import router as marketplace_router
+from security.middleware import FinancialRateLimitMiddleware
 
 
 @asynccontextmanager
@@ -46,6 +49,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(FinancialRateLimitMiddleware)
 
 static_dir = Path(__file__).resolve().parent / "static"
 static_dir.mkdir(exist_ok=True)
@@ -74,3 +78,5 @@ app.include_router(saves_router)
 app.include_router(locale_router)
 app.include_router(admin_router)
 app.include_router(reports_router)
+app.include_router(tax_router)
+app.include_router(marketplace_router)

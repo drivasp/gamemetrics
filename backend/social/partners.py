@@ -151,6 +151,11 @@ async def my_partner(authorization: Annotated[str | None, Header()] = None):
     connect = await get_connect_account(partner["partner_id"])
     placements = await list_partner_placements(partner["partner_id"])
 
+    from checkout.financial_statement import build_partner_financial_statement
+    from checkout.direct_fee import publication_fee_policy
+
+    statement = await build_partner_financial_statement(partner["partner_id"])
+
     return {
         "partner": partner,
         "games": games,
@@ -170,6 +175,8 @@ async def my_partner(authorization: Annotated[str | None, Header()] = None):
             "publisher_share_pct": partner["revenue_share_pct"],
             "platform_take_rate_pct": round(100.0 - float(partner["revenue_share_pct"]), 2),
         },
+        "financial_statement": statement,
+        "publication_fee_policy": publication_fee_policy(),
         "payouts": earnings.get("payouts") or [],
         "subscription": sub,
         "plans": list_plans(),

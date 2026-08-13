@@ -1,0 +1,68 @@
+{
+  "_meta": {
+    "title": "GameMetrics financial model assumptions",
+    "note": "ALL numeric values below are ASSUMPTIONS for planning, not audited company data.",
+    "currency": "USD",
+    "updated": "2026-08-12"
+  },
+  "platform": {
+    "take_rate": 0.30,
+    "publication_fee_usd": 100,
+    "payment_processing_rate": 0.029,
+    "payment_processing_fixed_usd": 0.30,
+    "refund_rate": 0.08,
+    "chargeback_rate": 0.005,
+    "chargeback_fee_usd_assumption": 15
+  },
+  "conversion": {
+    "mau_share_of_registered": 0.35,
+    "buyer_share_of_mau": 0.12,
+    "orders_per_buyer_per_month": 1.4,
+    "aov_usd": 18.0
+  },
+  "catalog": {
+    "games_per_10k_users": 40,
+    "partner_share_of_gmv": 0.70
+  },
+  "opex_monthly_by_scale": {
+    "10000": {
+      "infra": 800,
+      "personnel": 12000,
+      "marketing": 2000,
+      "support": 500,
+      "security_ops": 400,
+      "other": 300
+    },
+    "100000": {
+      "infra": 4500,
+      "personnel": 45000,
+      "marketing": 15000,
+      "support": 4000,
+      "security_ops": 2500,
+      "other": 1500
+    },
+    "1000000": {
+      "infra": 35000,
+      "personnel": 220000,
+      "marketing": 120000,
+      "support": 35000,
+      "security_ops": 18000,
+      "other": 12000
+    },
+    "10000000": {
+      "infra": 280000,
+      "personnel": 1200000,
+      "marketing": 900000,
+      "support": 250000,
+      "security_ops": 120000,
+      "other": 80000
+    }
+  },
+  "unit_economics_inputs": {
+    "cac_usd_assumption": 4.5,
+    "avg_buyer_lifetime_months": 18,
+    "monthly_churn_assumption": 0.06,
+    "gross_margin_on_take_after_psp": 0.85
+  },
+  "scenarios_users": [10000, 100000, 1000000, 10000000]
+}

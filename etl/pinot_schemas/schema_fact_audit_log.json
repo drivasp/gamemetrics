@@ -1,0 +1,25 @@
+{
+  "schemaName": "fact_audit_log",
+  "dimensionFieldSpecs": [
+    {"name": "audit_id", "dataType": "STRING"},
+    {"name": "actor_id", "dataType": "STRING"},
+    {"name": "action", "dataType": "STRING"},
+    {"name": "entity_type", "dataType": "STRING"},
+    {"name": "entity_id", "dataType": "STRING"},
+    {"name": "currency", "dataType": "STRING"},
+    {"name": "meta_json", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "amount", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {
+      "name": "created_at",
+      "dataType": "LONG",
+      "format": "1:MILLISECONDS:EPOCH",
+      "granularity": "1:MILLISECONDS"
+    }
+  ],
+  "primaryKeyColumns": ["audit_id"]
+}

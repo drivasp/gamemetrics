@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any
 
+from checkout.revenue_share import split_revenue as _split_engine
 from shared.auth_deps import esc
 from shared.cliente_pinot import pinot_query
 from shared.kafka_producer import kafka_send
@@ -45,17 +46,23 @@ def refund_ledger_id(purchase_id: str) -> str:
 def split_revenue(gross: float, publisher_share_pct: float) -> tuple[float, float, float, float]:
     """
     Returns: (gross, platform_fee, publisher_net, platform_take_rate_pct)
+    Delegado a checkout.revenue_share (flat | steam_tiers).
     """
-    share = float(publisher_share_pct or 70.0)
-    if share < 0:
-        share = 0.0
-    if share > 100:
-        share = 100.0
-    g = _money(gross)
-    publisher_net = _money(g * (share / 100.0))
-    platform_fee = _money(g - publisher_net)
-    take = _money(100.0 - share)
-    return g, platform_fee, publisher_net, take
+    r = _split_engine(gross, publisher_share_pct)
+    return r.gross, r.platform_fee, r.publisher_net, r.platform_take_rate_pct
+
+
+async def _ledger_entry_exists(entry_id: str) -> dict[str, Any] | None:
+    cached = _LEDGER_CACHE.get(entry_id)
+    if cached and not cached.get("deleted"):
+        return cached
+    rows = await pinot_query(
+        f"SELECT ledger_entry_id FROM fact_partner_ledger "
+        f"WHERE ledger_entry_id = '{esc(entry_id)}' AND deleted = false LIMIT 1"
+    )
+    if rows:
+        return {"ledger_entry_id": entry_id, "status": "already_exists"}
+    return None
 
 
 @dataclass
@@ -131,9 +138,36 @@ async def record_sale_ledger(
     if gross_line <= 0:
         return None
 
-    g, fee, net, take = split_revenue(gross_line, attr.publisher_share_pct)
-    now_ms = int(time.time() * 1000)
     entry_id = sale_ledger_id(order_id, product_id)
+    existing = await _ledger_entry_exists(entry_id)
+    if existing and existing.get("gross_amount") is not None:
+        return existing
+    if existing and existing.get("status") == "already_exists":
+        return existing
+
+    # Lifetime AGR del producto (para steam_tiers); en flat se ignora.
+    lifetime_before = 0.0
+    try:
+        from checkout.revenue_share import MODE as _RS_MODE
+
+        if _RS_MODE == "steam_tiers":
+            prev = await pinot_query(
+                f"SELECT SUM(gross_amount) FROM fact_partner_ledger "
+                f"WHERE product_id = '{esc(product_id)}' AND deleted = false "
+                f"AND entry_type IN ('sale','refund','chargeback')"
+            )
+            if prev and prev[0][0] is not None:
+                lifetime_before = float(prev[0][0])
+    except Exception:
+        lifetime_before = 0.0
+
+    split = _split_engine(
+        gross_line,
+        attr.publisher_share_pct,
+        lifetime_agr_before=lifetime_before,
+    )
+    g, fee, net, take = split.gross, split.platform_fee, split.publisher_net, split.platform_take_rate_pct
+    now_ms = int(time.time() * 1000)
     entry = {
         "ledger_entry_id": entry_id,
         "partner_id": attr.partner_id,
@@ -156,6 +190,18 @@ async def record_sale_ledger(
     }
     _cache_put(entry)
     await kafka_send("fact_partner_ledger", entry_id, entry)
+
+    try:
+        from checkout.direct_fee import maybe_recoup_publication_fee
+
+        await maybe_recoup_publication_fee(
+            partner_id=attr.partner_id,
+            product_id=product_id,
+            game_name=game_name or attr.game_name,
+        )
+    except Exception as exc:
+        print(f"[direct_fee] recoup skip: {exc}")
+
     return entry
 
 
@@ -222,8 +268,14 @@ async def record_refund_ledger(
         gname = game_name or attr.game_name
         related = ""
 
-    now_ms = int(time.time() * 1000)
     entry_id = refund_ledger_id(purchase_id)
+    existing = await _ledger_entry_exists(entry_id)
+    if existing and existing.get("entry_type") == "refund":
+        return existing
+    if existing and existing.get("status") == "already_exists":
+        return existing
+
+    now_ms = int(time.time() * 1000)
     entry = {
         "ledger_entry_id": entry_id,
         "partner_id": partner_id,
