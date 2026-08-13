@@ -39,11 +39,29 @@ from checkout.webhook_idempotency import process_once  # noqa: E402
 from tax.engine import calculate_tax  # noqa: E402
 from fraud.service import RuleBasedFraudDetector  # noqa: E402
 from marketplace import service as market  # noqa: E402
+from marketplace import durable_store as mstore  # noqa: E402
 from marketplace.service import (  # noqa: E402
     mint_item,
     create_listing,
     purchase_listing,
 )
+from ledger.sqlite_store import init_ledger  # noqa: E402
+import tempfile  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+
+def _reset_mkt_db():
+    tmp = Path(tempfile.mkdtemp(prefix="gm_int_"))
+    os.environ["FINANCIAL_LEDGER_PATH"] = str(tmp / "ledger.sqlite3")
+    import ledger.sqlite_store as ls
+
+    ls._INITIALIZED = False
+    init_ledger()
+    mstore._INITIALIZED = False
+    p = Path(mstore._db_path())
+    if p.exists():
+        p.unlink()
+    mstore.init_marketplace_store()
 
 
 def sale_ledger_id(order_id: str, product_id: str) -> str:
@@ -106,6 +124,7 @@ def test_tax_engine_mx_and_es_included():
 
 
 def test_webhook_idempotency():
+    _reset_mkt_db()
     calls = {"n": 0}
 
     def handler():
@@ -120,10 +139,7 @@ def test_webhook_idempotency():
 def test_marketplace_buy_idempotent_and_fees():
     _WALLETS.clear()
     _WALLET_TX.clear()
-    market._ITEMS.clear()
-    market._LISTINGS.clear()
-    market._TXS.clear()
-    market._IDEMPOTENCY.clear()
+    _reset_mkt_db()
 
     seller = "seller1"
     buyer = "buyer1"
@@ -138,15 +154,12 @@ def test_marketplace_buy_idempotent_and_fees():
     assert abs(tx1["platform_fee"] + tx1["game_fee"] + tx1["seller_net"] - 10) < 0.02
     assert abs(_WALLETS[buyer] - 90.0) < 0.02
     assert abs(_WALLETS[seller] - tx1["seller_net"]) < 0.02
-    assert market._ITEMS[item["item_id"]]["owner_user_id"] == buyer
+    assert mstore.get_item(item["item_id"])["owner_user_id"] == buyer
 
 
 def test_marketplace_double_buy_blocked():
     _WALLETS.clear()
-    market._ITEMS.clear()
-    market._LISTINGS.clear()
-    market._TXS.clear()
-    market._IDEMPOTENCY.clear()
+    _reset_mkt_db()
     seller, buyer, buyer2 = "s2", "b2", "b3"
     _WALLETS[buyer] = 50
     _WALLETS[buyer2] = 50

@@ -62,7 +62,9 @@ from checkout.webhook_idempotency import process_once  # noqa: E402
 from tax.engine import calculate_tax  # noqa: E402
 from fraud.service import RuleBasedFraudDetector  # noqa: E402
 from security.rate_limit import rate_limit  # noqa: E402
+from marketplace.fees_calc import fee_breakdown  # noqa: E402
 from marketplace import service as market  # noqa: E402
+from marketplace import durable_store as mstore  # noqa: E402
 from fastapi import HTTPException  # noqa: E402
 
 market.get_balance = fake_get_balance  # type: ignore
@@ -89,14 +91,24 @@ def check(name: str, fn):
 def reset_market():
     _WALLETS.clear()
     _WALLET_TX.clear()
-    market._ITEMS.clear()
-    market._LISTINGS.clear()
-    market._TXS.clear()
-    market._IDEMPOTENCY.clear()
+    import tempfile
+    from pathlib import Path
+    from ledger.sqlite_store import init_ledger
+    import ledger.sqlite_store as ls
+
+    tmp = Path(tempfile.mkdtemp(prefix="gm_mkt_"))
+    os.environ["FINANCIAL_LEDGER_PATH"] = str(tmp / "ledger.sqlite3")
+    ls._INITIALIZED = False
+    init_ledger()
+    mstore._INITIALIZED = False
+    p = Path(mstore._db_path())
+    if p.exists():
+        p.unlink()
+    mstore.init_marketplace_store()
 
 
 def test_fees_10():
-    f = market.fee_breakdown(10)
+    f = fee_breakdown(10)
     assert abs(f["platform_fee"] + f["game_fee"] + f["seller_net"] - 10) < 0.001
     assert f["platform_fee"] == 0.5 and f["game_fee"] == 1.0 and f["seller_net"] == 8.5
 
@@ -157,7 +169,7 @@ def test_double_buy_same_listing():
         raise AssertionError("should reject")
     except ValueError:
         pass
-    assert market._ITEMS[item["item_id"]]["owner_user_id"] == "b1"
+    assert mstore.get_item(item["item_id"])["owner_user_id"] == "b1"
     assert abs(_WALLETS["b1"] - 90) < 0.01
     assert abs(_WALLETS["b2"] - 100) < 0.01  # no debit
 
@@ -175,6 +187,12 @@ def test_idempotent_buy_no_double_money():
 
 
 def test_webhook_duplicate():
+    reset_market()
+    from ledger.sqlite_store import init_ledger
+    import ledger.sqlite_store as ls
+
+    ls._INITIALIZED = False
+    init_ledger()
     n = {"c": 0}
 
     def h():
@@ -224,8 +242,8 @@ def test_cancel_listing_restores_owned():
     item = run(market.mint_item(owner_user_id="s", game_id="g", item_name="y"))
     listing = run(market.create_listing(seller_user_id="s", item_id=item["item_id"], price_usd=3))
     run(market.cancel_listing(seller_user_id="s", listing_id=listing["listing_id"]))
-    assert market._ITEMS[item["item_id"]]["status"] == "owned"
-    assert market._LISTINGS[listing["listing_id"]]["status"] == "cancelled"
+    assert mstore.get_item(item["item_id"])["status"] == "owned"
+    assert mstore.get_listing(listing["listing_id"])["status"] == "cancelled"
 
 
 def test_balances_match_fees_ledger_concept():

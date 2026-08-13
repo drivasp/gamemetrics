@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from shared.kafka_producer import start_producer, stop_producer
 from ledger.sqlite_store import init_ledger
+from marketplace.durable_store import init_marketplace_store
 
 from auth.router import router as auth_router
 from tienda.router import router as tienda_router
@@ -38,6 +39,7 @@ from security.middleware import FinancialRateLimitMiddleware
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_ledger()
+    init_marketplace_store()
     await start_producer()
     yield
     await stop_producer()

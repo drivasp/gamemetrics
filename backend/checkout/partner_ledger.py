@@ -226,7 +226,25 @@ async def record_sale_ledger(
                 allow_negative_balance=True,
             )
     except Exception as exc:
-        print(f"[ledger] durable sale skip: {exc}")
+        import logging
+
+        from ledger.sqlite_store import enqueue_reconcile
+
+        logging.getLogger("gamemetrics.partner_ledger").error(
+            "durable sale skip entry=%s: %s", entry_id, exc
+        )
+        enqueue_reconcile(
+            operation="durable_sale",
+            entity_id=entry_id,
+            error_message=str(exc),
+            payload={
+                "partner_id": attr.partner_id,
+                "order_id": order_id,
+                "product_id": product_id,
+                "net": net,
+                "fee": fee,
+            },
+        )
 
     try:
         from checkout.direct_fee import maybe_recoup_publication_fee

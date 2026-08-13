@@ -293,10 +293,35 @@ async def create_payout(
 
     # Idempotencia: misma clave o misma referencia no duplica payout pagado
     key = (idempotency_key or reference or "").strip()
+    if not key:
+        raise ValueError(
+            "idempotency_key o reference requerida para payout (evita doble transferencia)"
+        )
+    from ledger.sqlite_store import claim_exists, try_claim
+
+    payout_claim = f"payout_claim_{partner_id}_{key}"
+    # Claim exists: devolver payout existente por reference/idem (incl. failed sandbox)
+    if claim_exists(payout_claim):
+        for p in await list_partner_payouts(partner_id, limit=100):
+            if p.get("reference") == key or f"idem:{key}" in str(p.get("notes") or ""):
+                return p
+        for p in _PAYOUT_CACHE.values():
+            if p.get("partner_id") == partner_id and (
+                p.get("reference") == key or f"idem:{key}" in str(p.get("notes") or "")
+            ):
+                return p
+        raise ValueError(f"Payout con clave '{key}' ya fue reclamado")
+
     if key:
         for p in await list_partner_payouts(partner_id, limit=100):
             if key and (p.get("reference") == key or f"idem:{key}" in str(p.get("notes") or "")):
                 return p
+
+    if not try_claim(payout_claim, "payout", metadata={"partner_id": partner_id, "key": key, "amount": amt}):
+        for p in await list_partner_payouts(partner_id, limit=100):
+            if p.get("reference") == key or f"idem:{key}" in str(p.get("notes") or ""):
+                return p
+        raise ValueError(f"Payout concurrente con clave '{key}'")
 
     # Sandbox: simular fallo sin debitar saldo
     if force_fail or method == "sandbox_fail":
@@ -402,12 +427,21 @@ async def create_payout(
             amount=-amt,
             reference=row["reference"],
             related_payment=payout_id,
-            idempotency_key=f"durable_payout_{key or payout_id}",
+            idempotency_key=f"durable_payout_{key}",
             metadata={"method": method, "created_by": created_by},
             allow_negative_balance=True,
         )
     except Exception as exc:
-        print(f"[payout] durable skip: {exc}")
+        from ledger.sqlite_store import enqueue_reconcile
+        import logging
+
+        logging.getLogger("gamemetrics.payout").error("durable skip: %s", exc)
+        enqueue_reconcile(
+            operation="durable_payout",
+            entity_id=payout_id,
+            error_message=str(exc),
+            payload={"partner_id": partner_id, "amount": amt, "key": key},
+        )
     try:
         from checkout.financial_audit import audit_event
 

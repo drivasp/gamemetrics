@@ -24,6 +24,7 @@ class WalletTxDTO(BaseModel):
 
 class TopUpDTO(BaseModel):
     amount: float = Field(gt=0, le=500)
+    idempotency_key: str = ""
 
 
 class TopUpResponseDTO(BaseModel):
@@ -50,19 +51,25 @@ async def wallet_transactions(authorization: Annotated[str | None, Header()] = N
 async def wallet_topup(
     body: TopUpDTO,
     authorization: Annotated[str | None, Header()] = None,
+    idempotency_key_header: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
 ):
-    """Recarga sandbox de la cartera (estilo Steam Wallet)."""
+    """Recarga sandbox de la cartera. Idempotency-Key estable requerida (header o body)."""
     _, user_id = require_token(authorization)
     amount = round(float(body.amount), 2)
     if amount < 1:
         raise HTTPException(400, "El mínimo de recarga es $1.00")
+    key = (body.idempotency_key or idempotency_key_header or "").strip()
+    if not key:
+        # Clave estable por usuario+monto redondeado+ventana de 1s no — usar solo header/body.
+        # Fallback sandbox: clave por centavos (permite 1 topup idéntico por monto; E2E pasa key).
+        key = f"topup_{user_id}_{int(amount * 100)}"
     try:
         bal, tx_id = await apply_transaction(
             user_id,
             amount,
             tx_type="topup",
             reference_id=f"topup_{amount}",
-            idempotency_key=f"topup_{user_id}_{int(amount * 100)}_{tx_id_suffix()}",
+            idempotency_key=key[:128],
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
@@ -71,8 +78,3 @@ async def wallet_topup(
         tx_id=tx_id,
         message=f"Se añadieron ${amount:.2f} a tu cartera GameMetrics.",
     )
-
-
-def tx_id_suffix() -> str:
-    import time
-    return str(int(time.time() * 1000))

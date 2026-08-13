@@ -103,6 +103,30 @@ def init_ledger() -> None:
                 "CREATE INDEX IF NOT EXISTS idx_ft_type "
                 "ON financial_transactions(type);"
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS financial_operation_claims (
+                    claim_key     TEXT PRIMARY KEY,
+                    operation     TEXT NOT NULL,
+                    created_at    INTEGER NOT NULL,
+                    metadata_json TEXT NOT NULL DEFAULT '{}'
+                );
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS financial_reconcile_queue (
+                    queue_id      TEXT PRIMARY KEY,
+                    operation     TEXT NOT NULL,
+                    entity_id     TEXT NOT NULL,
+                    error_message TEXT NOT NULL,
+                    payload_json  TEXT NOT NULL DEFAULT '{}',
+                    status        TEXT NOT NULL DEFAULT 'pending',
+                    created_at    INTEGER NOT NULL,
+                    updated_at    INTEGER NOT NULL
+                );
+                """
+            )
         finally:
             conn.close()
         _INITIALIZED = True
@@ -111,6 +135,91 @@ def init_ledger() -> None:
 def ensure_init() -> None:
     if not _INITIALIZED:
         init_ledger()
+
+
+def try_claim(claim_key: str, operation: str, metadata: dict | None = None) -> bool:
+    """
+    Claim atómico de una operación (fulfill, webhook, payout).
+    True = esta llamada gana el claim (debe ejecutar).
+    False = ya existía (idempotente / concurrente — no re-ejecutar side effects).
+    """
+    ensure_init()
+    key = (claim_key or "").strip()
+    if not key:
+        raise ValueError("claim_key requerido")
+    now = int(time.time() * 1000)
+    meta = json.dumps(metadata or {}, ensure_ascii=False)
+    with _tx() as conn:
+        row = conn.execute(
+            "SELECT claim_key FROM financial_operation_claims WHERE claim_key = ? LIMIT 1",
+            (key,),
+        ).fetchone()
+        if row:
+            return False
+        conn.execute(
+            "INSERT INTO financial_operation_claims (claim_key, operation, created_at, metadata_json) "
+            "VALUES (?, ?, ?, ?)",
+            (key, operation, now, meta),
+        )
+        return True
+
+
+def claim_exists(claim_key: str) -> bool:
+    ensure_init()
+    conn = _connect()
+    try:
+        row = conn.execute(
+            "SELECT 1 FROM financial_operation_claims WHERE claim_key = ? LIMIT 1",
+            ((claim_key or "").strip(),),
+        ).fetchone()
+        return bool(row)
+    finally:
+        conn.close()
+
+
+def enqueue_reconcile(
+    *,
+    operation: str,
+    entity_id: str,
+    error_message: str,
+    payload: dict | None = None,
+) -> str:
+    """Registra fallo durable de posteo (no solo print) para reconciliación operativa."""
+    ensure_init()
+    qid = uuid.uuid4().hex[:16]
+    now = int(time.time() * 1000)
+    with _tx() as conn:
+        conn.execute(
+            """
+            INSERT INTO financial_reconcile_queue (
+                queue_id, operation, entity_id, error_message, payload_json, status, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)
+            """,
+            (
+                qid,
+                operation,
+                entity_id,
+                (error_message or "")[:2000],
+                json.dumps(payload or {}, ensure_ascii=False),
+                now,
+                now,
+            ),
+        )
+    return qid
+
+
+def list_reconcile_pending(limit: int = 50) -> list[dict[str, Any]]:
+    ensure_init()
+    conn = _connect()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM financial_reconcile_queue WHERE status = 'pending' "
+            "ORDER BY created_at ASC LIMIT ?",
+            (int(limit),),
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
 
 
 def get_by_idempotency(idempotency_key: str) -> dict[str, Any] | None:

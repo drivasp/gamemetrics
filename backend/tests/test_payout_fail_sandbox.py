@@ -8,6 +8,12 @@ import types
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import tempfile
+from pathlib import Path
+
+_tmp = tempfile.mkdtemp(prefix="gm_payout_")
+os.environ["FINANCIAL_LEDGER_PATH"] = str(Path(_tmp) / "ledger.sqlite3")
+
 
 async def _noop(*a, **k):
     return True

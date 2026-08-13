@@ -388,16 +388,24 @@ async def stripe_webhook(request: Request):
 
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
+        event_id = str(event.get("id") or session.get("id") or "")
         if session.get("payment_status") == "paid":
-            meta = session.get("metadata") or {}
-            kind = meta.get("kind") or ""
-            if kind == "saas_subscription":
-                from checkout.saas_billing import fulfill_saas_from_stripe_session
-                await fulfill_saas_from_stripe_session(session["id"])
-            elif kind == "featured_placement":
-                from checkout.saas_billing import fulfill_featured_from_stripe_session
-                await fulfill_featured_from_stripe_session(session["id"])
-            else:
-                await fulfill_from_stripe_session(session["id"])
+            from checkout.webhook_idempotency import process_once_async
+
+            async def _handle():
+                meta = session.get("metadata") or {}
+                kind = meta.get("kind") or ""
+                if kind == "saas_subscription":
+                    from checkout.saas_billing import fulfill_saas_from_stripe_session
+                    await fulfill_saas_from_stripe_session(session["id"])
+                elif kind == "featured_placement":
+                    from checkout.saas_billing import fulfill_featured_from_stripe_session
+                    await fulfill_featured_from_stripe_session(session["id"])
+                else:
+                    await fulfill_from_stripe_session(session["id"])
+                return {"ok": True, "session_id": session.get("id")}
+
+            result, dup = await process_once_async(event_id or f"session_{session.get('id')}", _handle)
+            return {"received": True, "duplicate": dup, "result": result}
 
     return {"received": True}

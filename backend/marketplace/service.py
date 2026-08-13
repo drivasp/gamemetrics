@@ -1,25 +1,23 @@
 """
 Marketplace P2P — listing / buy / fee / ownership (sandbox wallet).
 
-Pago vía wallet sandbox. PSP real = OPEN_DEPENDENCY (Stripe).
-Fee política: MARKETPLACE_PLATFORM_FEE_PCT + MARKETPLACE_GAME_FEE_PCT (defaults 5+10).
+Ownership/listings/txs: SQLite durable_store.
+Dinero: ledger SQLite vía wallet.apply_transaction.
+Kafka: event bus analytics.
 """
 from __future__ import annotations
 
-import os
 import time
 import uuid
 from typing import Any
 
 from checkout.financial_audit import audit_event
+from marketplace import durable_store as store
 from marketplace.fees_calc import GAME_FEE_PCT, PLATFORM_FEE_PCT, _money, fee_breakdown
 from shared.kafka_producer import kafka_send
 from wallet.servicio import apply_transaction, get_balance
 
-_ITEMS: dict[str, dict[str, Any]] = {}  # item_id -> ownership
-_LISTINGS: dict[str, dict[str, Any]] = {}
-_TXS: dict[str, dict[str, Any]] = {}
-_IDEMPOTENCY: dict[str, str] = {}  # key -> tx_id
+store.ensure_init()
 
 
 async def mint_item(
@@ -37,12 +35,12 @@ async def mint_item(
         "game_id": game_id,
         "item_name": item_name,
         "item_type": item_type,
-        "status": "owned",  # owned | listed | traded
+        "status": "owned",
         "created_at": now,
         "updated_at": now,
         "deleted": False,
     }
-    _ITEMS[item_id] = row
+    store.save_item(row)
     await kafka_send("market_items", item_id, row)
     return row
 
@@ -53,7 +51,7 @@ async def create_listing(
     item_id: str,
     price_usd: float,
 ) -> dict[str, Any]:
-    item = _ITEMS.get(item_id)
+    item = store.get_item(item_id)
     if not item or item.get("deleted"):
         raise ValueError("Item no encontrado")
     if item["owner_user_id"] != seller_user_id:
@@ -75,7 +73,7 @@ async def create_listing(
         "item_name": item["item_name"],
         "price_usd": price,
         "currency": "USD",
-        "status": "active",  # active | sold | cancelled
+        "status": "active",
         "platform_fee_pct": PLATFORM_FEE_PCT,
         "game_fee_pct": GAME_FEE_PCT,
         "created_at": now,
@@ -85,7 +83,8 @@ async def create_listing(
     }
     item["status"] = "listed"
     item["updated_at"] = now
-    _LISTINGS[listing_id] = listing
+    store.save_listing(listing)
+    store.save_item(item)
     await kafka_send("market_listings", listing_id, listing)
     await kafka_send("market_items", item_id, item)
     audit_event(
@@ -100,7 +99,7 @@ async def create_listing(
 
 
 async def cancel_listing(*, seller_user_id: str, listing_id: str) -> dict[str, Any]:
-    listing = _LISTINGS.get(listing_id)
+    listing = store.get_listing(listing_id)
     if not listing or listing.get("deleted"):
         raise ValueError("Listing no encontrado")
     if listing["seller_user_id"] != seller_user_id:
@@ -110,11 +109,13 @@ async def cancel_listing(*, seller_user_id: str, listing_id: str) -> dict[str, A
     now = int(time.time() * 1000)
     listing["status"] = "cancelled"
     listing["updated_at"] = now
-    item = _ITEMS.get(listing["item_id"])
+    item = store.get_item(listing["item_id"])
     if item:
         item["status"] = "owned"
         item["updated_at"] = now
+        store.save_item(item)
         await kafka_send("market_items", item["item_id"], item)
+    store.save_listing(listing)
     await kafka_send("market_listings", listing_id, listing)
     return listing
 
@@ -126,24 +127,26 @@ async def purchase_listing(
     idempotency_key: str = "",
 ) -> dict[str, Any]:
     key = (idempotency_key or "").strip() or f"mktbuy_{buyer_user_id}_{listing_id}"
-    if key in _IDEMPOTENCY:
-        tx_id = _IDEMPOTENCY[key]
-        return _TXS[tx_id]
+    existing_tx_id = store.get_idempotency(key)
+    if existing_tx_id:
+        tx = store.get_tx(existing_tx_id)
+        if tx:
+            return tx
 
-    # Idempotencia durable: si el débito buyer ya se posteó, no duplicar compra
+    prior_buyer = None
     try:
         from ledger.sqlite_store import get_by_idempotency
 
-        prior = get_by_idempotency(f"mkt_buyer_{listing_id}_{key}")
-        if prior:
-            for tx in _TXS.values():
-                if tx.get("idempotency_key") == key:
-                    _IDEMPOTENCY[key] = tx["tx_id"]
-                    return tx
+        prior_buyer = get_by_idempotency(f"mkt_buyer_{listing_id}_{key}")
     except Exception:
         pass
+    if prior_buyer:
+        for tx in store.all_txs():
+            if tx.get("idempotency_key") == key:
+                store.set_idempotency(key, tx["tx_id"])
+                return tx
 
-    listing = _LISTINGS.get(listing_id)
+    listing = store.get_listing(listing_id)
     if not listing or listing.get("deleted"):
         raise ValueError("Listing no encontrado")
     if listing["status"] != "active":
@@ -151,7 +154,7 @@ async def purchase_listing(
     if listing["seller_user_id"] == buyer_user_id:
         raise ValueError("No puedes comprar tu propio listing")
 
-    item = _ITEMS.get(listing["item_id"])
+    item = store.get_item(listing["item_id"])
     if not item or item["status"] != "listed":
         raise ValueError("Item no listado")
 
@@ -160,7 +163,6 @@ async def purchase_listing(
     if bal + 0.001 < fees["gross"]:
         raise ValueError(f"Saldo insuficiente (${bal:.2f})")
 
-    # Debit buyer (ledger durable SoT + idempotencia)
     await apply_transaction(
         buyer_user_id,
         -fees["gross"],
@@ -168,7 +170,6 @@ async def purchase_listing(
         reference_id=listing_id,
         idempotency_key=f"mkt_buyer_{listing_id}_{key}",
     )
-    # Credit seller net
     await apply_transaction(
         listing["seller_user_id"],
         fees["seller_net"],
@@ -176,7 +177,6 @@ async def purchase_listing(
         reference_id=listing_id,
         idempotency_key=f"mkt_seller_{listing_id}_{key}",
     )
-    # Platform + game fee en ledger durable (cuenta plataforma)
     try:
         from ledger.sqlite_store import post_entry
 
@@ -207,10 +207,8 @@ async def purchase_listing(
     except Exception as exc:
         print(f"[marketplace] durable fee ledger skip: {exc}")
 
-
     now = int(time.time() * 1000)
     tx_id = uuid.uuid4().hex[:16]
-    # Transfer ownership
     item["owner_user_id"] = buyer_user_id
     item["status"] = "owned"
     item["updated_at"] = now
@@ -235,10 +233,10 @@ async def purchase_listing(
         "created_at": now,
         "deleted": False,
     }
-    _TXS[tx_id] = tx
-    _IDEMPOTENCY[key] = tx_id
-    _LISTINGS[listing_id] = listing
-    _ITEMS[item["item_id"]] = item
+    store.save_tx(tx)
+    store.set_idempotency(key, tx_id)
+    store.save_listing(listing)
+    store.save_item(item)
 
     await kafka_send("market_transactions", tx_id, tx)
     await kafka_send("market_listings", listing_id, listing)
@@ -256,21 +254,27 @@ async def purchase_listing(
 
 
 def list_active_listings(limit: int = 50) -> list[dict[str, Any]]:
-    items = [l for l in _LISTINGS.values() if l.get("status") == "active" and not l.get("deleted")]
+    items = [
+        l
+        for l in store.all_listings()
+        if l.get("status") == "active" and not l.get("deleted")
+    ]
     items.sort(key=lambda x: x.get("created_at", 0), reverse=True)
     return items[:limit]
 
 
 def inventory_for_user(user_id: str) -> list[dict[str, Any]]:
     return [
-        i for i in _ITEMS.values()
+        i
+        for i in store.all_items()
         if i.get("owner_user_id") == user_id and not i.get("deleted")
     ]
 
 
 def history_for_user(user_id: str, limit: int = 50) -> list[dict[str, Any]]:
     txs = [
-        t for t in _TXS.values()
+        t
+        for t in store.all_txs()
         if t.get("buyer_user_id") == user_id or t.get("seller_user_id") == user_id
     ]
     txs.sort(key=lambda x: x.get("created_at", 0), reverse=True)
@@ -278,8 +282,10 @@ def history_for_user(user_id: str, limit: int = 50) -> list[dict[str, Any]]:
 
 
 def seller_balance_from_market(user_id: str) -> float:
-    return _money(sum(
-        float(t.get("seller_net") or 0)
-        for t in _TXS.values()
-        if t.get("seller_user_id") == user_id and t.get("status") == "completed"
-    ))
+    return _money(
+        sum(
+            float(t.get("seller_net") or 0)
+            for t in store.all_txs()
+            if t.get("seller_user_id") == user_id and t.get("status") == "completed"
+        )
+    )

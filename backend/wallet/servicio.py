@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import time
-import uuid
 
 from ledger.sqlite_store import account_balance, get_by_idempotency, post_entry
 from shared.auth_deps import esc
@@ -40,15 +39,18 @@ async def apply_transaction(
     """
     Aplica crédito (amount > 0) o débito (amount < 0).
     Idempotente vía UNIQUE(idempotency_key) en ledger durable.
+    REQUIERE idempotency_key estable (no UUID aleatorio) — retry-safe.
     """
-    if not idempotency_key:
-        idempotency_key = f"{tx_type}_{user_id}_{reference_id}_{uuid.uuid4().hex[:8]}"
+    key = (idempotency_key or "").strip()
+    if not key:
+        raise ValueError(
+            "idempotency_key requerida para operaciones de wallet (retry-safe)"
+        )
 
-    existing = get_by_idempotency(idempotency_key)
+    existing = get_by_idempotency(key)
     if existing:
         return await get_balance(user_id), existing["transaction_id"]
 
-    # Normalizar signo según tipo
     t = str(tx_type or "").lower()
     raw = float(amount)
     if t in CREDIT_TYPES:
@@ -65,7 +67,7 @@ async def apply_transaction(
         amount=signed,
         currency="USD",
         reference=reference_id or "",
-        idempotency_key=idempotency_key,
+        idempotency_key=key,
         metadata={"tx_type": t},
         allow_negative_balance=False,
     )
@@ -73,14 +75,13 @@ async def apply_transaction(
     now_ms = int(entry["created_at"] or time.time() * 1000)
     new_balance = await get_balance(user_id)
 
-    # Event bus + analytics (best effort; no afecta SoT)
     try:
         await kafka_send("fact_wallet_transactions", tx_id, {
             "tx_id": tx_id,
             "user_id": user_id,
             "amount": round(abs(signed), 2),
             "tx_type": t,
-            "idempotency_key": idempotency_key,
+            "idempotency_key": key,
             "reference_id": reference_id or "",
             "created_at": now_ms,
             "deleted": False,
@@ -107,7 +108,6 @@ async def list_transactions(user_id: str, limit: int = 50) -> list[dict]:
             }
             for e in entries
         ]
-    # Fallback analytics Pinot (legacy)
     rows = await pinot_query(
         f"SELECT tx_id, amount, tx_type, reference_id, created_at "
         f"FROM fact_wallet_transactions "

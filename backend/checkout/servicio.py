@@ -99,7 +99,26 @@ async def fulfill_order(
     stripe_session_id: str = "",
     provider: str = "sandbox",
 ) -> int:
-    if await order_already_paid(order_id):
+    """
+    Cumple orden de forma idempotente.
+    SoT anti-doble-fulfill: SQLite claim `fulfill_order_{order_id}` (no Pinot).
+    """
+    from ledger.sqlite_store import claim_exists, enqueue_reconcile, try_claim
+
+    claim_key = f"fulfill_order_{order_id}"
+    if claim_exists(claim_key) or await order_already_paid(order_id):
+        return len(items)
+
+    if not try_claim(
+        claim_key,
+        "fulfill_order",
+        metadata={
+            "order_id": order_id,
+            "user_id": user_id,
+            "payment_id": payment_id,
+            "provider": provider,
+        },
+    ):
         return len(items)
 
     now_ms = int(time.time() * 1000)
@@ -140,8 +159,25 @@ async def fulfill_order(
                 currency=str(currency or "USD"),
             )
         except Exception as exc:
-            # No bloquea la compra del jugador; se loguea para operaciones.
-            print(f"[ledger] ERROR sale order={order_id} product={item.product_id}: {exc}")
+            import logging
+
+            logging.getLogger("gamemetrics.checkout").error(
+                "ledger sale failed order=%s product=%s: %s",
+                order_id,
+                item.product_id,
+                exc,
+            )
+            enqueue_reconcile(
+                operation="partner_sale",
+                entity_id=f"{order_id}:{item.product_id}",
+                error_message=str(exc),
+                payload={
+                    "order_id": order_id,
+                    "product_id": item.product_id,
+                    "user_id": user_id,
+                    "unit_price": float(item.unit_price or 0),
+                },
+            )
 
         await kafka_send("fact_cart", item.id, {
             "cart_item_id": item.id,
