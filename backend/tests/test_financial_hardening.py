@@ -153,6 +153,61 @@ def test_webhook_process_once_durable():
     assert n["c"] == 1 and d1 is False and d2 is True
 
 
+def test_webhook_process_once_async_and_concurrent():
+    """Router Stripe usa process_once_async — una sola ejecución efectiva."""
+    import asyncio
+
+    from checkout.webhook_idempotency import process_once_async
+
+    n = {"c": 0}
+
+    async def h():
+        n["c"] += 1
+        await asyncio.sleep(0.01)
+        return {"ok": True, "n": n["c"]}
+
+    async def go():
+        r1, d1 = await process_once_async("evt_async_1", h)
+        r2, d2 = await process_once_async("evt_async_1", h)
+        assert n["c"] == 1 and d1 is False and d2 is True
+        assert r1.get("ok") is True
+
+        # concurrente sobre otro event_id
+        n["c"] = 0
+
+        async def h2():
+            n["c"] += 1
+            await asyncio.sleep(0.02)
+            return {"ok": True}
+
+        results = await asyncio.gather(
+            process_once_async("evt_async_race", h2),
+            process_once_async("evt_async_race", h2),
+            process_once_async("evt_async_race", h2),
+        )
+        dups = sum(1 for _, dup in results if dup)
+        runs = sum(1 for _, dup in results if not dup)
+        assert runs == 1 and dups == 2
+        assert n["c"] == 1
+
+    asyncio.run(go())
+
+
+def test_refund_claim_concurrent_only_one_wins():
+    key = "refund_claim_purchase_race"
+    wins = []
+
+    def worker():
+        wins.append(store.try_claim(key, "refund"))
+
+    threads = [threading.Thread(target=worker) for _ in range(10)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert sum(1 for w in wins if w) == 1
+
+
 def test_enqueue_reconcile_not_just_print():
     qid = store.enqueue_reconcile(
         operation="durable_sale",
