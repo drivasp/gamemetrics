@@ -6,28 +6,35 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Header, HTTPException
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from launcher.servicio import (
     ensure_achievements,
     ensure_build,
+    get_build_by_id,
     get_install_state,
     playtime_minutes,
     set_install_state,
     unlock_achievement,
+    update_available,
     user_achievements,
 )
 from shared.auth_deps import require_token, esc
 from shared.cliente_pinot import pinot_query
 from shared.kafka_producer import kafka_send
 from shared.pinot_utils import to_ms
+from shared.storage import get_object_bytes, sha256_hex
 
 router = APIRouter(prefix="/launcher", tags=["launcher"])
 
 
 class ProgressDTO(BaseModel):
     progress_pct: float = Field(ge=0, le=100)
+
+
+class VerifyInstallDTO(BaseModel):
+    checksum: str | None = None
 
 
 class PlayStartDTO(BaseModel):
@@ -127,10 +134,43 @@ async def library_status(authorization: Annotated[str | None, Header()] = None):
         if int(ended_at or 0) <= 0:
             active_map[pid] = str(session_id)
 
+    # Latest build ids/versions for update hints
+    build_rows = await pinot_query(
+        f"SELECT product_id, build_id, version, checksum, created_at FROM fact_builds "
+        f"WHERE deleted = false AND os = 'win' LIMIT 500"
+    )
+    latest_by_pid: dict[str, tuple] = {}
+    for pid, bid, ver, checksum, created in build_rows:
+        pid_s = str(pid)
+        prev = latest_by_pid.get(pid_s)
+        from launcher.servicio import version_key
+        if not prev or version_key(str(ver or "0")) > version_key(str(prev[1] or "0")):
+            latest_by_pid[pid_s] = (str(bid), str(ver or "1.0.0"), str(checksum or ""))
+
+    build_meta: dict[str, tuple] = {}
+    for pid, bid, ver, checksum, _created in build_rows:
+        build_meta[str(bid)] = (str(ver or "1.0.0"), str(checksum or ""))
+
     items = []
     for p in purchases:
         product_id = str(p[0])
         inst = install_map.get(product_id)
+        status = (inst[2] if inst else "not_installed") or "not_installed"
+        installed_bid = (inst[1] if inst else "") or ""
+        installed_ver = build_meta.get(installed_bid, ("", ""))[0] if installed_bid else ""
+        latest = latest_by_pid.get(product_id)
+        update_avail = False
+        latest_ver = ""
+        latest_bid = ""
+        if status == "installed" and latest:
+            latest_bid, latest_ver, latest_cs = latest
+            if installed_bid != latest_bid:
+                installed_cs = build_meta.get(installed_bid, ("", ""))[1] if installed_bid else ""
+                update_avail = True if not installed_ver else (
+                    version_key(latest_ver) > version_key(installed_ver)
+                    or (installed_cs and latest_cs and installed_cs != latest_cs)
+                    or (installed_bid != latest_bid and version_key(latest_ver) >= version_key(installed_ver or "0"))
+                )
         items.append({
             "product_id": product_id,
             "game_slug": p[1],
@@ -138,9 +178,12 @@ async def library_status(authorization: Annotated[str | None, Header()] = None):
             "game_image": p[3] or None,
             "amount": float(p[4] or 0),
             "purchased_at": str(p[5]),
-            "install_status": (inst[2] if inst else "not_installed") or "not_installed",
+            "install_status": status,
             "progress_pct": float(inst[3] or 0) if inst else 0.0,
-            "build_id": (inst[1] if inst else "") or "",
+            "build_id": installed_bid,
+            "installed_version": installed_ver,
+            "latest_version": latest_ver,
+            "update_available": update_avail,
             "playtime_minutes": round(playtime_map.get(product_id, 0.0), 1),
             "active_session_id": active_map.get(product_id),
         })
@@ -193,16 +236,12 @@ async def game_launcher_detail(
     }
 
 
-@router.post("/install/{product_id}")
-async def start_install(
+async def _begin_download(
+    user_id: str,
     product_id: str,
-    game_name: str = "",
-    authorization: Annotated[str | None, Header()] = None,
-):
-    _, user_id = require_token(authorization)
-    if not await _owns(user_id, product_id):
-        raise HTTPException(403, "No posees este juego")
-
+    game_name: str,
+    status: str,
+) -> dict:
     build = await ensure_build(product_id, game_name)
     token_id = uuid.uuid4().hex
     now_ms = int(time.time() * 1000)
@@ -217,15 +256,63 @@ async def start_install(
         "deleted": False,
     })
     install = await set_install_state(
-        user_id, product_id, "downloading", 0.0, build["build_id"]
+        user_id, product_id, status, 0.0, build["build_id"]
     )
     return {
         "install": install,
         "build": build,
         "download_token": token_id,
         "download_url": f"/launcher/download/{token_id}",
-        "message": "Descarga iniciada",
     }
+
+
+@router.get("/updates/{product_id}")
+async def check_updates(
+    product_id: str,
+    game_name: str = "",
+    authorization: Annotated[str | None, Header()] = None,
+):
+    _, user_id = require_token(authorization)
+    if not await _owns(user_id, product_id):
+        raise HTTPException(403, "No posees este juego")
+    return await update_available(user_id, product_id, game_name)
+
+
+@router.post("/install/{product_id}")
+async def start_install(
+    product_id: str,
+    game_name: str = "",
+    authorization: Annotated[str | None, Header()] = None,
+):
+    _, user_id = require_token(authorization)
+    if not await _owns(user_id, product_id):
+        raise HTTPException(403, "No posees este juego")
+
+    payload = await _begin_download(user_id, product_id, game_name, "downloading")
+    return {**payload, "message": "Descarga iniciada"}
+
+
+@router.post("/install/{product_id}/update")
+async def start_update(
+    product_id: str,
+    game_name: str = "",
+    authorization: Annotated[str | None, Header()] = None,
+):
+    """Re-download the latest build (auto-update)."""
+    _, user_id = require_token(authorization)
+    if not await _owns(user_id, product_id):
+        raise HTTPException(403, "No posees este juego")
+    info = await update_available(user_id, product_id, game_name)
+    if info["installed_status"] != "installed":
+        raise HTTPException(400, "Instala el juego antes de actualizar")
+    if not info["update_available"]:
+        return {
+            "update_available": False,
+            "message": "Ya tienes la última versión",
+            "latest_build": info["latest_build"],
+        }
+    payload = await _begin_download(user_id, product_id, game_name, "updating")
+    return {**payload, "update_available": True, "message": "Actualización iniciada"}
 
 
 @router.patch("/install/{product_id}/progress")
@@ -240,9 +327,13 @@ async def update_progress(
 
     current = await get_install_state(user_id, product_id)
     pct = float(body.progress_pct)
-    status = "installed" if pct >= 100 else "downloading"
     if pct >= 100:
+        status = "installed"
         pct = 100.0
+    elif current.get("status") == "updating":
+        status = "updating"
+    else:
+        status = "downloading"
     install = await set_install_state(
         user_id, product_id, status, pct, current.get("build_id") or ""
     )
@@ -263,32 +354,40 @@ async def uninstall(
 
 @router.get("/download/{token_id}")
 async def download_package(token_id: str):
-    """Entrega un paquete manifest (demo profesional sin MinIO)."""
+    """Stream the real ZIP package for a valid download token."""
     rows = await pinot_query(
         f"SELECT token_id, user_id, build_id, used, expires_at FROM fact_download_tokens "
         f"WHERE token_id = '{esc(token_id)}' AND deleted = false LIMIT 1"
     )
     if not rows:
-        content = (
-            "GameMetrics Digital Delivery Package\n"
-            f"token={token_id}\n"
-            "status=pending_index\n"
-        )
-        return PlainTextResponse(content, media_type="text/plain")
+        raise HTTPException(404, "Token de descarga no encontrado")
 
-    token_id_v, user_id, build_id, used, expires_at = rows[0]
+    token_id_v, user_id, build_id, _used, expires_at = rows[0]
     if to_ms(expires_at) and int(time.time() * 1000) > to_ms(expires_at):
         raise HTTPException(410, "Token de descarga expirado")
 
     builds = await pinot_query(
-        f"SELECT version, os, file_path, file_size_bytes, checksum FROM fact_builds "
+        f"SELECT version, os, file_path, file_size_bytes, checksum, product_id FROM fact_builds "
         f"WHERE build_id = '{esc(build_id)}' AND deleted = false LIMIT 1"
     )
-    version = builds[0][0] if builds else "1.0.0"
-    os_name = builds[0][1] if builds else "win"
-    path = builds[0][2] if builds else ""
-    size = builds[0][3] if builds else 0
-    checksum = builds[0][4] if builds else ""
+    if not builds:
+        raise HTTPException(404, "Build no encontrado")
+
+    version, _os_name, path, _size, checksum, product_id = builds[0]
+    data = get_object_bytes(str(path))
+    if not data:
+        # Lazily materialize package if metadata exists but blob missing
+        from shared.storage import ensure_package
+        pkg = ensure_package(str(product_id), str(product_id), str(version or "1.0.0"))
+        data = get_object_bytes(pkg["file_path"])
+        path = pkg["file_path"]
+        checksum = pkg["checksum"]
+    if not data:
+        raise HTTPException(404, "Paquete de instalación no disponible")
+
+    if checksum and sha256_hex(data) != checksum:
+        # Refresh checksum metadata if package regenerated
+        checksum = sha256_hex(data)
 
     await kafka_send("fact_download_tokens", token_id_v, {
         "token_id": token_id_v,
@@ -300,22 +399,44 @@ async def download_package(token_id: str):
         "deleted": False,
     })
 
-    content = (
-        "GameMetrics Digital Delivery Package\n"
-        f"build_id={build_id}\n"
-        f"version={version}\n"
-        f"os={os_name}\n"
-        f"file_path={path}\n"
-        f"file_size_bytes={size}\n"
-        f"checksum={checksum}\n"
-        "format=zip\n"
-        "note=Paquete de instalación gestionado por GameMetrics Launcher\n"
+    filename = f"gamemetrics_{build_id}.zip"
+    return Response(
+        content=data,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(data)),
+            "X-Checksum-SHA256": checksum or "",
+            "X-Build-Id": str(build_id),
+            "X-Product-Id": str(product_id),
+        },
     )
-    return PlainTextResponse(
-        content,
-        media_type="application/octet-stream",
-        headers={"Content-Disposition": f'attachment; filename="gamemetrics_{build_id}.manifest"'},
+
+
+@router.post("/install/{product_id}/verify")
+async def verify_install(
+    product_id: str,
+    body: VerifyInstallDTO | None = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    """Mark install complete after client verifies downloaded checksum."""
+    _, user_id = require_token(authorization)
+    if not await _owns(user_id, product_id):
+        raise HTTPException(403, "No posees este juego")
+
+    current = await get_install_state(user_id, product_id)
+    build_id = current.get("build_id") or ""
+    build = await get_build_by_id(build_id) if build_id else None
+    if not build:
+        build = await ensure_build(product_id)
+    client_checksum = body.checksum if body else None
+    if client_checksum and build.get("checksum") and client_checksum != build["checksum"]:
+        raise HTTPException(400, "Checksum inválido: la descarga está corrupta")
+
+    install = await set_install_state(
+        user_id, product_id, "installed", 100.0, build["build_id"]
     )
+    return {"install": install, "build": build, "message": "Instalación verificada"}
 
 
 @router.post("/play/start")
@@ -368,6 +489,12 @@ async def play_start(
     unlocked = []
     if await unlock_achievement(user_id, body.product_id, f"{body.product_id}_first_launch"):
         unlocked.append("Primer arranque")
+
+    try:
+        from social.friends import heartbeat
+        await heartbeat(user_id, "playing", body.game_name or body.product_id)
+    except Exception:
+        pass
 
     try:
         from social.servicio import post_activity, notify

@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { timeout, catchError, of } from 'rxjs';
+import { timeout, catchError, of, firstValueFrom } from 'rxjs';
 import { LibraryService, LibraryItem } from '../../services/library.service';
 import { WalletService } from '../../services/wallet.service';
 import {
@@ -11,6 +11,7 @@ import {
   Achievement,
 } from '../../services/launcher.service';
 import { AchievementPopupService } from '../../services/achievement-popup.service';
+import { AuthService } from '../../services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
 import { GameCoverComponent } from '../../shared/game-cover/game-cover.component';
 
@@ -39,6 +40,7 @@ export class LibraryComponent implements OnInit, OnDestroy {
   private launcher = inject(LauncherService);
   private walletSvc = inject(WalletService);
   private popup = inject(AchievementPopupService);
+  private auth = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
 
   tab: 'games' | 'achievements' = 'games';
@@ -63,6 +65,8 @@ export class LibraryComponent implements OnInit, OnDestroy {
   achievements: Achievement[] = [];
   detailLoading = false;
   buildInfo: { version: string; file_size_bytes: number; os: string } | null = null;
+  cloudSaves: any[] = [];
+  saveSlots = [0, 1, 2];
 
   /** Modal de reembolso */
   refundItem: LibraryItem | null = null;
@@ -206,7 +210,8 @@ export class LibraryComponent implements OnInit, OnDestroy {
     this.launcher.startInstall(item.product_id, item.game_name).subscribe({
       next: res => {
         item.build_id = res.install.build_id;
-        this.runInstallProgress(item);
+        const url = res.download_url || `/launcher/download/${res.download_token}`;
+        void this.runRealDownload(item, url);
       },
       error: err => {
         this.installingId = null;
@@ -216,41 +221,100 @@ export class LibraryComponent implements OnInit, OnDestroy {
     });
   }
 
-  private runInstallProgress(item: LauncherLibraryItem): void {
+  update(item: LauncherLibraryItem): void {
+    if (this.installingId) return;
+    this.installingId = item.product_id;
+    item.install_status = 'updating';
+    item.progress_pct = 0;
+    this.launcher.startUpdate(item.product_id, item.game_name).subscribe({
+      next: res => {
+        if (!res.update_available || !res.download_url) {
+          this.installingId = null;
+          item.install_status = 'installed';
+          item.update_available = false;
+          this.popup.showInfo('Sin updates', res.message || 'Ya tienes la última versión');
+          this.cdr.detectChanges();
+          return;
+        }
+        item.build_id = res.install?.build_id || item.build_id;
+        void this.runRealDownload(item, res.download_url, true);
+      },
+      error: err => {
+        this.installingId = null;
+        item.install_status = 'installed';
+        this.popup.showInfo('Update fallido', err?.error?.detail || 'No se pudo actualizar');
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  private async runRealDownload(
+    item: LauncherLibraryItem,
+    downloadUrl: string,
+    isUpdate = false,
+  ): Promise<void> {
     this.clearInstallTimer();
-    let pct = 0;
-    this.installTimer = setInterval(() => {
-      pct = Math.min(100, pct + 4 + Math.random() * 8);
-      item.progress_pct = Math.round(pct);
-      this.cdr.detectChanges();
-      if (pct >= 100) {
-        this.clearInstallTimer();
-        this.launcher.updateProgress(item.product_id, 100).subscribe({
-          next: () => {
-            item.install_status = 'installed';
-            item.progress_pct = 100;
-            this.installingId = null;
-            this.popup.showSuccess(
-              'Instalación completada',
-              `“${item.game_name}” está listo para jugar.`,
-            );
+    try {
+      const desktop = (window as any).gamemetricsDesktop;
+      if (desktop?.downloadAndInstall) {
+        await desktop.downloadAndInstall({
+          productId: item.product_id,
+          gameName: item.game_name,
+          downloadUrl,
+          token: this.auth.getToken(),
+          onProgress: (pct: number) => {
+            item.progress_pct = pct;
             this.cdr.detectChanges();
-          },
-          error: () => {
-            item.install_status = 'installed';
-            item.progress_pct = 100;
-            this.installingId = null;
-            this.popup.showSuccess(
-              'Instalación completada',
-              `“${item.game_name}” está listo para jugar.`,
-            );
-            this.cdr.detectChanges();
+            if (pct % 10 === 0) {
+              this.launcher.updateProgress(item.product_id, pct).subscribe();
+            }
           },
         });
-      } else if (Math.round(pct) % 20 < 5) {
-        this.launcher.updateProgress(item.product_id, item.progress_pct).subscribe();
+        await firstValueFrom(this.launcher.verifyInstall(item.product_id));
+        item.install_status = 'installed';
+        item.progress_pct = 100;
+        item.update_available = false;
+        this.installingId = null;
+        this.popup.showSuccess(
+          isUpdate ? 'Actualización completada' : 'Instalación completada',
+          `“${item.game_name}” listo en el cliente de escritorio.`,
+        );
+        this.cdr.detectChanges();
+        return;
       }
-    }, 350);
+
+      const { checksum } = await this.launcher.downloadPackage(downloadUrl, pct => {
+        item.progress_pct = pct;
+        this.cdr.detectChanges();
+        if (pct > 0 && pct < 100 && pct % 15 < 3) {
+          this.launcher.updateProgress(item.product_id, pct).subscribe();
+        }
+      });
+      this.launcher.verifyInstall(item.product_id, checksum || undefined).subscribe({
+        next: () => {
+          item.install_status = 'installed';
+          item.progress_pct = 100;
+          item.update_available = false;
+          this.installingId = null;
+          this.popup.showSuccess(
+            isUpdate ? 'Actualización completada' : 'Instalación completada',
+            `“${item.game_name}” descargado y verificado (checksum OK).`,
+          );
+          this.cdr.detectChanges();
+        },
+        error: err => {
+          this.installingId = null;
+          item.install_status = isUpdate ? 'installed' : 'not_installed';
+          this.popup.showInfo('Verificación fallida', err?.error?.detail || 'Checksum inválido');
+          this.cdr.detectChanges();
+        },
+      });
+    } catch (e: any) {
+      this.installingId = null;
+      item.install_status = isUpdate ? 'installed' : 'not_installed';
+      this.popup.showInfo('Descarga fallida', e?.message || 'No se pudo descargar el paquete');
+      this.cdr.detectChanges();
+    }
   }
 
   askUninstall(item: LauncherLibraryItem): void {
@@ -288,6 +352,10 @@ export class LibraryComponent implements OnInit, OnDestroy {
 
   play(item: LauncherLibraryItem): void {
     if (item.install_status !== 'installed') return;
+    const desktop = (window as any).gamemetricsDesktop;
+    if (desktop?.launchGame) {
+      desktop.launchGame({ productId: item.product_id, gameName: item.game_name });
+    }
     this.launcher.playStart(item.product_id, item.game_name).subscribe({
       next: res => {
         this.playing = item;
@@ -358,6 +426,7 @@ export class LibraryComponent implements OnInit, OnDestroy {
     this.detailLoading = true;
     this.achievements = [];
     this.buildInfo = null;
+    this.cloudSaves = [];
     this.launcher.gameDetail(item.product_id, item.game_name).subscribe({
       next: d => {
         this.achievements = d.achievements;
@@ -377,10 +446,68 @@ export class LibraryComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
     });
+    this.launcher.listSaves(item.product_id).pipe(
+      catchError(() => of({ items: [], max_slot: 2 })),
+    ).subscribe({
+      next: res => {
+        this.cloudSaves = res.items || [];
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  saveFor(slot: number): any | null {
+    return this.cloudSaves.find(s => Number(s.slot) === slot) || null;
+  }
+
+  syncCloudSave(item: LauncherLibraryItem, slot: number): void {
+    const payload = {
+      score: Math.floor(Math.random() * 1000),
+      playtime_minutes: item.playtime_minutes || 0,
+      game_name: item.game_name,
+      saved_at: new Date().toISOString(),
+    };
+    this.launcher.putSave(item.product_id, slot, payload, `Autosave ${slot}`).subscribe({
+      next: () => {
+        this.popup.showSuccess(
+          'Nube',
+          `Slot ${slot} guardado · score ${payload.score} (demo, no es partida real)`,
+        );
+        this.launcher.listSaves(item.product_id).subscribe({
+          next: res => { this.cloudSaves = res.items || []; this.cdr.detectChanges(); },
+        });
+      },
+      error: err => this.popup.showInfo('Nube', err?.error?.detail || 'No se pudo guardar'),
+    });
+  }
+
+  loadCloudSave(item: LauncherLibraryItem, slot: number): void {
+    this.launcher.getSave(item.product_id, slot).subscribe({
+      next: res => {
+        const data = res?.data || {};
+        this.popup.showSuccess(
+          `Slot ${slot}`,
+          `Score ${data.score ?? '—'} · ${data.saved_at || res.updated_at || ''}`,
+        );
+      },
+      error: err => this.popup.showInfo('Nube', err?.error?.detail || 'Slot vacío'),
+    });
+  }
+
+  deleteCloudSave(item: LauncherLibraryItem, slot: number): void {
+    this.launcher.deleteSave(item.product_id, slot).subscribe({
+      next: () => {
+        this.cloudSaves = this.cloudSaves.filter(s => Number(s.slot) !== slot);
+        this.popup.showSuccess('Nube', `Slot ${slot} eliminado`);
+        this.cdr.detectChanges();
+      },
+      error: err => this.popup.showInfo('Nube', err?.error?.detail || 'No se pudo borrar'),
+    });
   }
 
   closeDetails(): void {
     this.detailItem = null;
+    this.cloudSaves = [];
   }
 
   unlockedCount(): number {

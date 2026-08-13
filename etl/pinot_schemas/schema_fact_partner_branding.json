@@ -1,0 +1,15 @@
+{
+  "schemaName": "fact_partner_branding",
+  "dimensionFieldSpecs": [
+    {"name": "partner_id", "dataType": "STRING"},
+    {"name": "store_name", "dataType": "STRING"},
+    {"name": "logo_url", "dataType": "STRING"},
+    {"name": "accent_color", "dataType": "STRING"},
+    {"name": "tagline", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "updated_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["partner_id"]
+}

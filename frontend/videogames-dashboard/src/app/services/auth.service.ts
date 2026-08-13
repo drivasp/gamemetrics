@@ -8,6 +8,8 @@ export interface User {
   display_name: string | null;
   avatar: string | null;
   bio: string | null;
+  country_code?: string | null;
+  role?: 'player' | 'publisher' | 'admin' | string;
 }
 
 export interface AuthResponse {
@@ -41,11 +43,17 @@ export class AuthService {
     this._currentUser$.next(res.user);
   }
 
-  register(email: string, password: string, displayName: string): Observable<AuthResponse> {
+  register(
+    email: string,
+    password: string,
+    displayName: string,
+    countryCode: string,
+  ): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/register`, {
       email,
       password,
       display_name: displayName,
+      country_code: countryCode,
     }).pipe(tap(res => this._save(res)));
   }
 
@@ -101,6 +109,19 @@ export class AuthService {
 
   getToken(): string {
     return localStorage.getItem(TOKEN_KEY) ?? '';
+  }
+
+  getRole(): string {
+    return this._currentUser$.value?.role || 'player';
+  }
+
+  isAdmin(): boolean {
+    return this.getRole() === 'admin';
+  }
+
+  isPublisher(): boolean {
+    const r = this.getRole();
+    return r === 'publisher' || r === 'admin';
   }
 
   private _authHeaders(): HttpHeaders {

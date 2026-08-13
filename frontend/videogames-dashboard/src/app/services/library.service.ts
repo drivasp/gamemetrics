@@ -27,6 +27,13 @@ export interface CheckoutResult {
   coupon_discount?: number;
   payment_method?: string | null;
   wallet_balance?: number | null;
+  country_code?: string | null;
+  pricing_region?: string | null;
+  tax_name?: string | null;
+  tax_rate_pct?: number;
+  taxable_amount?: number;
+  tax_amount?: number;
+  subtotal?: number;
 }
 
 export interface CheckoutRequest {
@@ -54,7 +61,12 @@ export class LibraryService {
   }
 
   checkout(body: CheckoutRequest = {}): Observable<CheckoutResult> {
-    return this.http.post<CheckoutResult>('/checkout', body, { headers: this.headers() });
+    const idempotencyKey =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `chk_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const headers = this.headers().set('Idempotency-Key', idempotencyKey);
+    return this.http.post<CheckoutResult>('/checkout', body, { headers });
   }
 
   validateCoupon(code: string, subtotal: number): Observable<{

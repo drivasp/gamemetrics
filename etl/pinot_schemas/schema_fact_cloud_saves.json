@@ -1,0 +1,20 @@
+{
+  "schemaName": "fact_cloud_saves",
+  "dimensionFieldSpecs": [
+    {"name": "save_id", "dataType": "STRING"},
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "product_id", "dataType": "STRING"},
+    {"name": "object_path", "dataType": "STRING"},
+    {"name": "checksum", "dataType": "STRING"},
+    {"name": "label", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "slot", "dataType": "INT"},
+    {"name": "size_bytes", "dataType": "LONG"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "updated_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["save_id"]
+}

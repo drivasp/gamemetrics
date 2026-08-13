@@ -136,6 +136,178 @@ body {
     gap: 4px;
   }
 
+  .region-menu {
+    position: relative;
+  }
+
+  .region-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    color: #c7d5e0;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 0.35rem 0.55rem;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover, &[aria-expanded="true"] {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    &.locked .lock-icon {
+      font-size: 14px !important;
+      width: 14px !important;
+      height: 14px !important;
+      opacity: 0.55;
+      color: #8f98a0;
+    }
+
+    .region-flag {
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .region-label {
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chevron-icon {
+      font-size: 16px !important;
+      width: 16px !important;
+      height: 16px !important;
+      opacity: 0.7;
+      transition: transform 0.15s;
+      &.open { transform: rotate(180deg); }
+    }
+  }
+
+  .region-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: min(300px, 92vw);
+    max-height: min(420px, 70vh);
+    overflow-y: auto;
+    background: #1b2838;
+    border: 1px solid #3d4450;
+    border-radius: 3px;
+    z-index: 320;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.55);
+    padding: 4px 0 6px;
+
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 10px 14px 8px;
+      border-bottom: 1px solid #2a475e;
+      margin-bottom: 4px;
+
+      strong {
+        color: #fff;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      span {
+        color: #8f98a0;
+        font-size: 0.7rem;
+      }
+    }
+  }
+
+  .region-locked-panel {
+    max-height: none;
+    width: min(320px, 92vw);
+  }
+
+  .region-locked-body {
+    padding: 10px 14px 14px;
+
+    .region-current {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 10px;
+      color: #fff;
+      font-size: 0.95rem;
+    }
+
+    .region-locked-msg {
+      margin: 0 0 8px;
+      color: #c7d5e0;
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+
+    .region-locked-hint {
+      margin: 0;
+      color: #8f98a0;
+      font-size: 0.72rem;
+    }
+  }
+
+  .region-option {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 28px 1fr 20px;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    color: #c7d5e0;
+    text-align: left;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: background 0.12s;
+
+    &:hover {
+      background: #67c1f533;
+      color: #fff;
+    }
+
+    &.active {
+      background: rgba(103, 193, 245, 0.12);
+      color: #fff;
+    }
+
+    .opt-flag { font-size: 1.1rem; line-height: 1; }
+
+    .opt-main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .opt-name {
+      font-size: 0.84rem;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    .opt-meta {
+      font-size: 0.68rem;
+      color: #8f98a0;
+      margin-top: 2px;
+    }
+
+    .opt-check {
+      color: #66c0f4;
+      font-size: 16px !important;
+      width: 16px !important;
+      height: 16px !important;
+    }
+  }
+
   .gifts-link {
     position: relative;
 

@@ -1,0 +1,22 @@
+{
+  "schemaName": "fact_order_taxes",
+  "dimensionFieldSpecs": [
+    {"name": "order_id", "dataType": "STRING"},
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "country_code", "dataType": "STRING"},
+    {"name": "pricing_region", "dataType": "STRING"},
+    {"name": "currency", "dataType": "STRING"},
+    {"name": "tax_name", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "tax_rate_pct", "dataType": "DOUBLE"},
+    {"name": "taxable_amount", "dataType": "DOUBLE"},
+    {"name": "tax_amount", "dataType": "DOUBLE"},
+    {"name": "total_with_tax", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["order_id"]
+}

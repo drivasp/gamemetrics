@@ -4,6 +4,7 @@ import uuid
 from decimal import Decimal
 
 from carrito.modelos_cart import CartDTO, CartItemDTO
+from checkout.partner_ledger import record_sale_ledger
 from shared.auth_deps import esc
 from shared.cliente_pinot import pinot_query
 from shared.kafka_producer import kafka_send
@@ -29,10 +30,11 @@ async def create_pending_order(
     idempotency_key: str,
     total: float | None = None,
     provider: str = "sandbox",
+    tax_meta: dict | None = None,
 ) -> int:
     now_ms = int(time.time() * 1000)
-    final_total = round(float(total if total is not None else cart.total), 2)
-    currency = "USD"
+    final_total = round(float(total if total is not None else cart.total_with_tax), 2)
+    currency = (tax_meta or {}).get("currency") or cart.currency or "USD"
 
     await kafka_send("fact_orders", order_id, {
         "order_id": order_id,
@@ -70,6 +72,22 @@ async def create_pending_order(
         "created_at": now_ms,
         "deleted": False,
     })
+
+    if tax_meta:
+        await kafka_send("fact_order_taxes", order_id, {
+            "order_id": order_id,
+            "user_id": user_id,
+            "country_code": tax_meta.get("country_code", cart.country_code),
+            "pricing_region": tax_meta.get("pricing_region", cart.pricing_region),
+            "currency": currency,
+            "tax_name": tax_meta.get("tax_name", cart.tax_name),
+            "tax_rate_pct": float(tax_meta.get("tax_rate_pct", cart.tax_rate_pct) or 0),
+            "taxable_amount": float(tax_meta.get("taxable_amount", 0) or 0),
+            "tax_amount": float(tax_meta.get("tax_amount", 0) or 0),
+            "total_with_tax": final_total,
+            "created_at": now_ms,
+            "deleted": False,
+        })
     return now_ms
 
 
@@ -109,6 +127,21 @@ async def fulfill_order(
             "deleted": False,
         })
         purchase_count += 1
+
+        # Dinero B2B: atribución partner + fee + neto (pre-impuesto).
+        try:
+            await record_sale_ledger(
+                order_id=order_id,
+                buyer_user_id=user_id,
+                product_id=item.product_id,
+                game_name=item.game_name or "",
+                unit_price=float(item.unit_price or 0),
+                quantity=int(item.quantity or 1),
+                currency=str(currency or "USD"),
+            )
+        except Exception as exc:
+            # No bloquea la compra del jugador; se loguea para operaciones.
+            print(f"[ledger] ERROR sale order={order_id} product={item.product_id}: {exc}")
 
         await kafka_send("fact_cart", item.id, {
             "cart_item_id": item.id,
@@ -195,18 +228,21 @@ def create_stripe_session(
     import stripe
 
     stripe.api_key = STRIPE_SECRET
-    final_total = round(float(total if total is not None else cart.total), 2)
-    # Una línea con el total final (incluye cupón) para que Stripe cobre el monto correcto
+    final_total = round(float(total if total is not None else cart.total_with_tax), 2)
+    currency = (cart.currency or "USD").lower()
+    # Una línea con el total final (incluye cupón + impuesto) para que Stripe cobre el monto correcto
     cents = max(50, int(round(Decimal(str(final_total)) * 100)))  # mínimo Stripe $0.50
     label = f"Pedido GameMetrics ({len(cart.items)} artículo(s))"
     if coupon_code:
         label += f" · cupón {coupon_code}"
+    if cart.tax_amount > 0:
+        label += f" · {cart.tax_name}"
 
     session = stripe.checkout.Session.create(
         mode="payment",
         line_items=[{
             "price_data": {
-                "currency": "usd",
+                "currency": currency,
                 "product_data": {"name": label},
                 "unit_amount": cents,
             },
@@ -219,6 +255,8 @@ def create_stripe_session(
             "payment_id": payment_id,
             "user_id": user_id,
             "coupon_code": coupon_code or "",
+            "country_code": cart.country_code,
+            "tax_amount": str(cart.tax_amount),
         },
     )
     return session.id, session.url or ""
@@ -241,8 +279,8 @@ async def fulfill_from_stripe_session(session_id: str) -> int:
 
     items = await load_cart_items_for_order(order_id, user_id)
     if not items:
-        from carrito.servicio import fetch_cart
-        cart = await fetch_cart(user_id)
+        from carrito.locale_cart import fetch_user_cart
+        cart = await fetch_user_cart(user_id)
         items = cart.items
 
     return await fulfill_order(

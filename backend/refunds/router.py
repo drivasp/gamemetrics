@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel
 
+from checkout.partner_ledger import record_refund_ledger
 from shared.auth_deps import require_token, esc
 from shared.cliente_pinot import pinot_query
 from shared.kafka_producer import kafka_send
@@ -85,6 +86,19 @@ async def request_refund(
         "refunded": True,
         "deleted": False,
     })
+
+    try:
+        await record_refund_ledger(
+            purchase_id=purchase_id,
+            order_id=str(order_id or ""),
+            buyer_user_id=user_id,
+            product_id=str(product_id or ""),
+            game_name=str(name or ""),
+            amount=amt,
+            currency="USD",
+        )
+    except Exception as exc:
+        print(f"[ledger] ERROR refund purchase={purchase_id}: {exc}")
 
     try:
         await apply_transaction(

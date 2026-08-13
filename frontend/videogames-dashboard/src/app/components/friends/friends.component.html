@@ -28,10 +28,18 @@
 
   <section *ngIf="!loading && tab === 'friends'">
     <article class="card" *ngFor="let f of friends">
-      <div class="avatar">{{ (f.user.display_name || '?').charAt(0) }}</div>
+      <div class="avatar-wrap">
+        <div class="avatar">{{ (f.user.display_name || '?').charAt(0) }}</div>
+        <span class="dot" [attr.data-status]="f.presence || (f.online ? 'online' : 'offline')"></span>
+      </div>
       <div>
         <h3>{{ f.user.display_name }}</h3>
-        <p>{{ f.user.email }}</p>
+        <p>
+          <ng-container *ngIf="f.presence === 'playing'">Jugando {{ f.presence_detail || '…' }}</ng-container>
+          <ng-container *ngIf="f.presence === 'online'">En línea</ng-container>
+          <ng-container *ngIf="f.presence === 'away'">Ausente</ng-container>
+          <ng-container *ngIf="!f.presence || f.presence === 'offline'">{{ f.user.email }} · Desconectado</ng-container>
+        </p>
       </div>
     </article>
     <p class="empty" *ngIf="!friends.length">Aún no tienes amigos. Envía una solicitud por correo.</p>

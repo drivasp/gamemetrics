@@ -46,6 +46,13 @@ header { margin-bottom: 18px;
   color: #fff; font-weight: 800;
   &.sm { width: 32px; height: 32px; font-size: 0.8rem; }
 }
+.avatar-wrap { position: relative; display: inline-flex; }
+.dot {
+  position: absolute; right: 0; bottom: 0; width: 10px; height: 10px;
+  border-radius: 50%; border: 2px solid #1b2838; background: #4b5563;
+  &[data-status="online"], &[data-status="playing"] { background: #3ddc84; }
+  &[data-status="away"] { background: #e5a813; }
+}
 .accept {
   background: #75b022; border: none; color: #fff; font-weight: 700;
   padding: 7px 12px; border-radius: 2px; cursor: pointer;

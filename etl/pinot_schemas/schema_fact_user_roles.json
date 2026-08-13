@@ -1,0 +1,12 @@
+{
+  "schemaName": "fact_user_roles",
+  "dimensionFieldSpecs": [
+    {"name": "user_id", "dataType": "STRING"},
+    {"name": "role", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "updated_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["user_id"]
+}

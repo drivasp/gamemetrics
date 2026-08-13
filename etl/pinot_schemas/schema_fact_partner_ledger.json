@@ -1,0 +1,33 @@
+{
+  "schemaName": "fact_partner_ledger",
+  "dimensionFieldSpecs": [
+    {"name": "ledger_entry_id", "dataType": "STRING"},
+    {"name": "partner_id", "dataType": "STRING"},
+    {"name": "order_id", "dataType": "STRING"},
+    {"name": "product_id", "dataType": "STRING"},
+    {"name": "game_name", "dataType": "STRING"},
+    {"name": "buyer_user_id", "dataType": "STRING"},
+    {"name": "entry_type", "dataType": "STRING"},
+    {"name": "currency", "dataType": "STRING"},
+    {"name": "status", "dataType": "STRING"},
+    {"name": "related_entry_id", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "quantity", "dataType": "INT"},
+    {"name": "gross_amount", "dataType": "DOUBLE"},
+    {"name": "platform_fee_amount", "dataType": "DOUBLE"},
+    {"name": "publisher_net_amount", "dataType": "DOUBLE"},
+    {"name": "publisher_share_pct", "dataType": "DOUBLE"},
+    {"name": "platform_take_rate_pct", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {
+      "name": "created_at",
+      "dataType": "LONG",
+      "format": "1:MILLISECONDS:EPOCH",
+      "granularity": "1:MILLISECONDS"
+    }
+  ],
+  "primaryKeyColumns": ["ledger_entry_id"]
+}

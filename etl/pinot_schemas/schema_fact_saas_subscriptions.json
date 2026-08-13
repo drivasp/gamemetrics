@@ -1,0 +1,20 @@
+{
+  "schemaName": "fact_saas_subscriptions",
+  "dimensionFieldSpecs": [
+    {"name": "subscription_id", "dataType": "STRING"},
+    {"name": "partner_id", "dataType": "STRING"},
+    {"name": "plan_id", "dataType": "STRING"},
+    {"name": "status", "dataType": "STRING"},
+    {"name": "billing_provider", "dataType": "STRING"},
+    {"name": "stripe_subscription_id", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "price_usd", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "current_period_end", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"},
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["subscription_id"]
+}

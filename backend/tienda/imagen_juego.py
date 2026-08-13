@@ -15,6 +15,16 @@ def placeholder_image(name: str, slug: str = "") -> str:
     return f"/store/cover-placeholder/{urllib.parse.quote(key, safe='')}?title={title}"
 
 
+def cover_proxy_url(name: str, slug: str = "") -> str:
+    """
+    URL lazy: el navegador pide la portada; el backend consulta RAWG y redirige.
+    Así el listado de tienda responde rápido y las imágenes llegan igual.
+    """
+    key = slug or name[:40]
+    title = urllib.parse.quote(name[:40], safe="")
+    return f"/store/cover/{urllib.parse.quote(key, safe='')}?title={title}"
+
+
 async def resolve_cover(slug: str, name: str) -> str:
     cache_key = slug or name
     if cache_key in _cover_cache:
@@ -28,19 +38,42 @@ async def resolve_cover(slug: str, name: str) -> str:
 
 
 def svg_placeholder(title: str) -> str:
-    safe = (title or "Juego")[:36].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    """Portada SVG local — se ve como cover de tienda, no como imagen rota."""
+    raw = (title or "Juego").strip()[:42]
+    safe = (
+        raw.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+    # Dos líneas si el nombre es largo
+    if len(raw) > 22:
+        cut = raw[:22].rsplit(" ", 1)[0] or raw[:22]
+        line1 = cut.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        rest = raw[len(cut):].strip()[:22]
+        line2 = rest.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        text_block = (
+            f'<text x="300" y="195" fill="#ffffff" font-family="Segoe UI,Arial,sans-serif" '
+            f'font-size="26" font-weight="700" text-anchor="middle">{line1}</text>'
+            f'<text x="300" y="230" fill="#c7d5e0" font-family="Segoe UI,Arial,sans-serif" '
+            f'font-size="22" font-weight="600" text-anchor="middle">{line2}</text>'
+        )
+    else:
+        text_block = (
+            f'<text x="300" y="210" fill="#ffffff" font-family="Segoe UI,Arial,sans-serif" '
+            f'font-size="28" font-weight="700" text-anchor="middle">{safe}</text>'
+        )
     return f"""<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0f3460"/>
-      <stop offset="100%" stop-color="#1a1a2e"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1b2838"/>
+      <stop offset="55%" stop-color="#2a475e"/>
+      <stop offset="100%" stop-color="#171a21"/>
     </linearGradient>
   </defs>
-  <rect width="600" height="400" fill="url(#g)"/>
-  <rect x="24" y="24" width="552" height="352" rx="12" fill="none" stroke="#e94560" stroke-width="2" opacity="0.35"/>
-  <rect x="248" y="148" width="104" height="64" rx="10" fill="none" stroke="#e94560" stroke-width="2" opacity="0.85"/>
-  <circle cx="278" cy="180" r="8" fill="#e94560"/>
-  <circle cx="318" cy="172" r="6" fill="none" stroke="#66c0f4" stroke-width="2"/>
-  <circle cx="332" cy="188" r="6" fill="none" stroke="#66c0f4" stroke-width="2"/>
-  <text x="300" y="240" fill="#ffffff" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="600" text-anchor="middle">{safe}</text>
+  <rect width="600" height="400" fill="url(#bg)"/>
+  <rect x="0" y="320" width="600" height="80" fill="#000000" opacity="0.35"/>
+  <text x="24" y="36" fill="#66c0f4" font-family="Segoe UI,Arial,sans-serif" font-size="14" font-weight="700" letter-spacing="2">GAMEMETRICS</text>
+  {text_block}
+  <text x="300" y="360" fill="#8f98a0" font-family="Segoe UI,Arial,sans-serif" font-size="14" text-anchor="middle">Portada no disponible</text>
 </svg>"""

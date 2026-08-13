@@ -1,0 +1,22 @@
+{
+  "schemaName": "fact_featured_placements",
+  "dimensionFieldSpecs": [
+    {"name": "placement_id", "dataType": "STRING"},
+    {"name": "partner_id", "dataType": "STRING"},
+    {"name": "product_id", "dataType": "STRING"},
+    {"name": "game_name", "dataType": "STRING"},
+    {"name": "status", "dataType": "STRING"},
+    {"name": "billing_provider", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "amount_paid", "dataType": "DOUBLE"},
+    {"name": "duration_days", "dataType": "INT"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "starts_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"},
+    {"name": "ends_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"},
+    {"name": "created_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["placement_id"]
+}

@@ -60,7 +60,7 @@
         <p class="meta-line">{{ formatPlaytime(g.playtime_minutes) }}</p>
         <p class="meta-line dim">Comprado {{ formatDate(g.purchased_at) }}</p>
 
-        <div class="progress-wrap" *ngIf="g.install_status === 'downloading'">
+        <div class="progress-wrap" *ngIf="g.install_status === 'downloading' || g.install_status === 'updating'">
           <div class="progress-bar"><div class="fill" [style.width.%]="g.progress_pct"></div></div>
           <span>{{ g.progress_pct | number:'1.0-0' }}%</span>
         </div>
@@ -75,10 +75,19 @@
           </button>
 
           <button
-            *ngIf="g.install_status === 'downloading'"
+            *ngIf="g.install_status === 'installed' && g.update_available && playing?.product_id !== g.product_id"
+            class="btn-install"
+            [disabled]="!!installingId"
+            (click)="update(g)">
+            Actualizar
+            <span *ngIf="g.latest_version" class="ver">v{{ g.latest_version }}</span>
+          </button>
+
+          <button
+            *ngIf="g.install_status === 'downloading' || g.install_status === 'updating'"
             class="btn-install busy"
             disabled>
-            Descargando...
+            {{ g.install_status === 'updating' ? 'Actualizando...' : 'Descargando...' }}
           </button>
 
           <button
@@ -177,12 +186,35 @@
         <p *ngIf="buildInfo"><span>Build</span> v{{ buildInfo.version }} · {{ buildInfo.os }} · {{ formatSize(buildInfo.file_size_bytes) }}</p>
         <div class="detail-actions">
           <button *ngIf="detailItem.install_status === 'not_installed'" class="btn-install" (click)="install(detailItem)">Instalar</button>
+          <button *ngIf="detailItem.install_status === 'installed' && detailItem.update_available" class="btn-install" (click)="update(detailItem)">
+            Actualizar{{ detailItem.latest_version ? ' v' + detailItem.latest_version : '' }}
+          </button>
           <button *ngIf="detailItem.install_status === 'installed'" class="btn-play" (click)="play(detailItem); closeDetails()">
             <mat-icon class="gm-icon-sm">play_arrow</mat-icon> Jugar
           </button>
         </div>
       </div>
     </div>
+
+    <section class="cloud-saves" *ngIf="detailItem.install_status === 'installed' || cloudSaves.length">
+      <h3>Guardados en la nube</h3>
+      <p class="cloud-hint">
+        Demo: al pulsar Guardar se sube un snapshot (score + fecha), no una partida real del juego.
+        Slots 0–2 en MinIO.
+      </p>
+      <div class="save-row" *ngFor="let slot of saveSlots">
+        <div>
+          <strong>Slot {{ slot }}</strong>
+          <p *ngIf="saveFor(slot)">{{ saveFor(slot).label || 'Sin etiqueta' }} · {{ formatSize(saveFor(slot).size_bytes || 0) }}</p>
+          <p *ngIf="!saveFor(slot)" class="dim">Vacío</p>
+        </div>
+        <div class="save-actions">
+          <button class="btn-ghost" (click)="syncCloudSave(detailItem, slot)">Guardar</button>
+          <button class="btn-ghost" *ngIf="saveFor(slot)" (click)="loadCloudSave(detailItem, slot)">Cargar</button>
+          <button class="btn-ghost danger" *ngIf="saveFor(slot)" (click)="deleteCloudSave(detailItem, slot)">Borrar</button>
+        </div>
+      </div>
+    </section>
 
     <section class="achievements">
       <h3>Logros</h3>

@@ -1,0 +1,61 @@
+<div class="reports-page">
+  <header class="reports-hero">
+    <div class="brand-block">
+      <p class="eyebrow">GameMetrics S.A. · Centro de Reportes</p>
+      <h1>Informes tácticos</h1>
+      <p class="lede">
+        Reportes operativos y analíticos para dirección y control.
+        Estilo financiero profesional — listados simples y agregados compuestos.
+      </p>
+    </div>
+    <div class="meta-block" *ngIf="generatedAt">
+      <span>Catálogo generado</span>
+      <strong>{{ generatedAt }}</strong>
+    </div>
+  </header>
+
+  <div class="state" *ngIf="loading">Cargando catálogo…</div>
+  <div class="state err" *ngIf="!loading && error">{{ error }}</div>
+
+  <ng-container *ngIf="!loading && !error">
+    <section class="section">
+      <div class="section-head">
+        <h2>Informes simples</h2>
+        <span class="count">{{ simples.length }}</span>
+      </div>
+      <p class="section-desc">Listados del estado actual. Filtro y ordenamiento — sin agregación previa.</p>
+      <div class="card-grid">
+        <a class="report-card" *ngFor="let r of simples" [routerLink]="['/reports', r.code]">
+          <div class="card-top">
+            <span class="code">{{ r.code }}</span>
+            <span class="badge simple">SIMPLE</span>
+          </div>
+          <h3>{{ r.title }}</h3>
+          <p class="q">{{ r.question }}</p>
+          <p class="area">{{ r.area }}</p>
+          <span class="open">Abrir informe <mat-icon>arrow_forward</mat-icon></span>
+        </a>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>Informes compuestos</h2>
+        <span class="count">{{ compounds.length }}</span>
+      </div>
+      <p class="section-desc">Sumas, conteos y agrupaciones sobre la capa columnar / libro de ingresos.</p>
+      <div class="card-grid">
+        <a class="report-card compound" *ngFor="let r of compounds" [routerLink]="['/reports', r.code]">
+          <div class="card-top">
+            <span class="code">{{ r.code }}</span>
+            <span class="badge compound">COMPUESTO</span>
+          </div>
+          <h3>{{ r.title }}</h3>
+          <p class="q">{{ r.question }}</p>
+          <p class="area">{{ r.area }}</p>
+          <span class="open">Abrir informe <mat-icon>arrow_forward</mat-icon></span>
+        </a>
+      </div>
+    </section>
+  </ng-container>
+</div>

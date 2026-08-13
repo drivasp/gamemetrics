@@ -56,10 +56,13 @@ async def upload_avatar(
         "created_at": to_ms(row[6]),
     })
 
+    from auth.roles import get_user_role
+    role = await get_user_role(user_id)
     return UserDTO(
         id=user_id,
         email=row[1],
         display_name=row[3] or None,
         bio=row[4] or None,
         avatar=avatar_url,
+        role=role,
     )

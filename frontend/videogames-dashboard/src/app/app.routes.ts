@@ -16,13 +16,20 @@ import { FriendsComponent } from './components/friends/friends.component';
 import { SupportComponent } from './components/support/support.component';
 import { PartnerComponent } from './components/partner/partner.component';
 import { FamilyComponent } from './components/family/family.component';
+import { AdminComponent } from './components/admin/admin.component';
+import { ReportsCatalogComponent } from './components/reports/reports-catalog.component';
+import { ReportViewerComponent } from './components/reports/report-viewer.component';
 import { authGuard } from './guards/auth.guard';
+import { adminGuard } from './guards/admin.guard';
+import { opsGuard } from './guards/ops.guard';
 
 export const routes: Routes = [
-  { path: '', component: DashboardComponent, pathMatch: 'full' },
+  { path: '', component: DashboardComponent, pathMatch: 'full', canActivate: [opsGuard] },
   { path: 'games', redirectTo: '', pathMatch: 'full' },
-  { path: 'empresa', component: EmpresaComponent },
-  { path: 'dimensiones', component: DimensionesComponent },
+  { path: 'empresa', component: EmpresaComponent, canActivate: [opsGuard] },
+  { path: 'dimensiones', component: DimensionesComponent, canActivate: [opsGuard] },
+  { path: 'reports', component: ReportsCatalogComponent, canActivate: [opsGuard] },
+  { path: 'reports/:code', component: ReportViewerComponent, canActivate: [opsGuard] },
   { path: 'store', component: StoreHomeComponent },
   { path: 'store/catalog', component: StoreCatalogComponent },
   { path: 'store/game/:slug', component: StoreGameDetailComponent },
@@ -36,5 +43,6 @@ export const routes: Routes = [
   { path: 'my-support', component: SupportComponent, canActivate: [authGuard] },
   { path: 'my-partner', component: PartnerComponent, canActivate: [authGuard] },
   { path: 'my-family', component: FamilyComponent, canActivate: [authGuard] },
+  { path: 'admin', component: AdminComponent, canActivate: [authGuard, adminGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
 ];

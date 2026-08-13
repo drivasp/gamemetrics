@@ -9,7 +9,7 @@
 
   <section *ngIf="!loading && !partner" class="register-card">
     <h2>Activa tu cuenta publisher</h2>
-    <p>Publica juegos y consulta ingresos estimados (revenue share 70%).</p>
+    <p>Publica juegos y recibe el 70% de cada venta (take rate plataforma 30%).</p>
     <input [(ngModel)]="company" placeholder="Nombre de la compañía">
     <button (click)="register()">Registrar publisher</button>
     <p class="err" *ngIf="error">{{ error }}</p>
@@ -20,48 +20,202 @@
       <div class="stat">
         <span>Compañía</span>
         <strong>{{ partner.company_name }}</strong>
+        <small class="badge" [class.active]="partner.status === 'active'">{{ partner.status || 'active' }}</small>
       </div>
       <div class="stat">
-        <span>Revenue share</span>
-        <strong>{{ partner.revenue_share_pct }}%</strong>
+        <span>Tu share / Take GM</span>
+        <strong>{{ partner.revenue_share_pct }}% / {{ earnings?.platform_take_rate_pct ?? (100 - partner.revenue_share_pct) }}%</strong>
       </div>
       <div class="stat">
-        <span>Ingresos brutos</span>
+        <span>Ventas (uds)</span>
+        <strong>{{ earnings?.units_sold ?? partner.units_sold ?? 0 }}</strong>
+      </div>
+      <div class="stat">
+        <span>GMV bruto</span>
         <strong class="green">{{ totalRevenue() | currency:'USD':'symbol':'1.2-2' }}</strong>
+      </div>
+      <div class="stat">
+        <span>Fee plataforma</span>
+        <strong>{{ platformFee() | currency:'USD':'symbol':'1.2-2' }}</strong>
+      </div>
+      <div class="stat">
+        <span>Saldo disponible</span>
+        <strong class="green">{{ balanceAvailable() | currency:'USD':'symbol':'1.2-2' }}</strong>
+      </div>
+      <div class="stat">
+        <span>En hold ({{ earnings?.hold_days || 0 }}d)</span>
+        <strong>{{ balancePending() | currency:'USD':'symbol':'1.2-2' }}</strong>
+      </div>
+      <div class="stat">
+        <span>Ya pagado</span>
+        <strong>{{ balancePaid() | currency:'USD':'symbol':'1.2-2' }}</strong>
       </div>
     </div>
 
     <div class="grid">
       <section class="card">
-        <h2>Añadir juego al catálogo partner</h2>
-        <input [(ngModel)]="gameName" placeholder="Nombre del juego">
-        <input [(ngModel)]="productId" placeholder="product_id (de la tienda)">
-        <button (click)="addGame()">Publicar juego</button>
+        <h2>Reclamar juego de la tienda</h2>
+        <p class="hint">
+          Busca un título del catálogo y reclámalo para tu estudio.
+          Así las ventas se atribuyen a ti (70%) y a GameMetrics (30%).
+        </p>
+        <input
+          [(ngModel)]="catalogSearch"
+          (ngModelChange)="onCatalogSearch($event)"
+          placeholder="Buscar juego (ej. Civilization, Factorio…)">
+
+        <div class="catalog-results" *ngIf="catalogLoading">Buscando en el catálogo…</div>
+
+        <div class="catalog-results" *ngIf="!catalogLoading && catalogResults.length">
+          <button
+            type="button"
+            class="catalog-item"
+            *ngFor="let g of catalogResults"
+            [class.selected]="selectedCatalog?.product_id === g.product_id"
+            (click)="selectCatalogGame(g)">
+            <div class="catalog-meta">
+              <strong>{{ g.name }}</strong>
+              <span>{{ g.price | currency:'USD':'symbol':'1.2-2' }} · {{ g.genres || '—' }}</span>
+            </div>
+            <span class="pick">Elegir</span>
+          </button>
+        </div>
+
+        <p class="empty" *ngIf="!catalogLoading && catalogSearch.trim().length >= 2 && !catalogResults.length">
+          No hay juegos de pago con ese nombre.
+        </p>
+
+        <div class="selected-game" *ngIf="selectedCatalog">
+          <p>
+            Seleccionado:
+            <strong>{{ selectedCatalog.name }}</strong>
+            · {{ selectedCatalog.price | currency:'USD':'symbol':'1.2-2' }}
+          </p>
+          <button (click)="claimSelectedGame()" [disabled]="claimBusy">
+            {{ claimBusy ? 'Reclamando…' : 'Reclamar este juego' }}
+          </button>
+        </div>
+
         <p class="ok" *ngIf="message">{{ message }}</p>
         <p class="err" *ngIf="error">{{ error }}</p>
       </section>
 
       <section class="card">
         <h2>Juegos publicados</h2>
-        <article *ngFor="let g of games" class="row">
+        <article *ngFor="let g of games" class="row game-upload">
           <div>
             <strong>{{ g.game_name }}</strong>
-            <p>{{ g.submission_status }} · {{ g.product_id }}</p>
+            <p>
+              <span class="status-pill" [class.ok]="g.submission_status === 'approved'" [class.wait]="g.submission_status === 'pending'">
+                {{ g.submission_status === 'approved' ? 'Aprobado' : (g.submission_status === 'pending' ? 'Pendiente de admin' : g.submission_status) }}
+              </span>
+              · {{ g.product_id }}
+            </p>
+            <div class="upload-row">
+              <input
+                class="ver-input"
+                [(ngModel)]="uploadVersion[g.product_id]"
+                placeholder="versión">
+              <label class="file-btn" [class.busy]="uploadBusy[g.product_id]">
+                {{ uploadBusy[g.product_id] ? 'Subiendo…' : 'Subir ZIP' }}
+                <input
+                  type="file"
+                  accept=".zip,application/zip"
+                  hidden
+                  [disabled]="uploadBusy[g.product_id]"
+                  (change)="onBuildSelected(g.product_id, $event)">
+              </label>
+            </div>
+            <ul class="builds" *ngIf="buildsByProduct[g.product_id]?.length">
+              <li *ngFor="let b of buildsByProduct[g.product_id]">
+                v{{ b.version }} · {{ b.checksum ? (b.checksum | slice:0:8) : '—' }} · {{ b.file_size_bytes || 0 }} B
+              </li>
+            </ul>
           </div>
         </article>
         <p class="empty" *ngIf="!games.length">Sin juegos todavía.</p>
       </section>
 
       <section class="card wide">
-        <h2>Snapshots de ingresos</h2>
+        <h2>Ingresos por juego (ledger real)</h2>
         <article *ngFor="let r of revenue" class="row">
           <div>
             <strong>{{ r.game_name }}</strong>
-            <p>{{ r.units_sold }} unidades</p>
+            <p>{{ r.units_sold }} uds · fee {{ (r.platform_fee || 0) | currency:'USD':'symbol':'1.2-2' }}</p>
           </div>
-          <span class="green">{{ r.gross_revenue | currency:'USD':'symbol':'1.2-2' }}</span>
+          <span class="green">{{ (r.publisher_net ?? r.gross_revenue) | currency:'USD':'symbol':'1.2-2' }}</span>
         </article>
-        <p class="empty" *ngIf="!revenue.length">Sin datos de ingresos.</p>
+        <p class="empty" *ngIf="!revenue.length">Aún no hay ventas atribuidas a tus juegos.</p>
+      </section>
+
+      <section class="card wide">
+        <h2>Movimientos del ledger</h2>
+        <article *ngFor="let e of ledger" class="row">
+          <div>
+            <strong>{{ e.entry_type === 'refund' ? 'Reembolso' : 'Venta' }} · {{ e.game_name }}</strong>
+            <p>{{ e.product_id }} · orden {{ e.order_id }}</p>
+          </div>
+          <span [class.green]="e.publisher_net_amount >= 0">
+            {{ e.publisher_net_amount | currency:'USD':'symbol':'1.2-2' }}
+          </span>
+        </article>
+        <p class="empty" *ngIf="!ledger.length">Sin movimientos todavía.</p>
+      </section>
+
+      <section class="card wide">
+        <h2>Payouts recibidos</h2>
+        <p class="hint">Política tipo Steam: hold {{ earnings?.hold_days || 0 }} días + mínimo ${{ earnings?.payout_min_usd || 1 }}. El admin liquida el saldo disponible.</p>
+        <article *ngFor="let p of payouts" class="row">
+          <div>
+            <strong>{{ p.method }} · {{ p.status }}</strong>
+            <p>Ref {{ p.reference }}</p>
+          </div>
+          <span class="green">{{ p.amount | currency:'USD':'symbol':'1.2-2' }}</span>
+        </article>
+        <p class="empty" *ngIf="!payouts.length">Aún no hay payouts. Cuando el admin marque pagado, aparecerán aquí.</p>
+        <button type="button" class="secondary" (click)="startConnect()">Conectar Stripe Connect (opcional)</button>
+        <p class="hint" *ngIf="connect">Connect: {{ connect.onboarding_status }} · payouts {{ connect.payouts_enabled ? 'ON' : 'OFF' }}</p>
+      </section>
+
+      <section class="card wide">
+        <h2>Plan SaaS GameMetrics</h2>
+        <p>Actual: <strong>{{ subscription?.plan?.name || 'Free' }}</strong></p>
+        <div class="plan-row" *ngFor="let pl of plans">
+          <div>
+            <strong>{{ pl.name }} — {{ pl.price_usd | currency:'USD':'symbol':'1.0-0' }}/mes</strong>
+            <p>{{ (pl.features || []).join(' · ') }}</p>
+          </div>
+          <button type="button" (click)="subscribe(pl.plan_id)" [disabled]="subscription?.plan_id === pl.plan_id">
+            {{ subscription?.plan_id === pl.plan_id ? 'Activo' : 'Activar' }}
+          </button>
+        </div>
+      </section>
+
+      <section class="card wide">
+        <h2>White-label (Pro/Studio)</h2>
+        <input [(ngModel)]="brandName" placeholder="Nombre de tu storefront">
+        <input [(ngModel)]="brandColor" placeholder="#e94560">
+        <input [(ngModel)]="brandTagline" placeholder="Tagline">
+        <button type="button" (click)="saveBrand()">Guardar branding</button>
+      </section>
+
+      <section class="card wide">
+        <h2>Featured de pago</h2>
+        <p class="hint">Destaca un juego en la tienda por 7 días. Descuento según plan SaaS.</p>
+        <article *ngFor="let g of games" class="row">
+          <div>
+            <strong>{{ g.game_name }}</strong>
+            <p>{{ g.product_id }}</p>
+          </div>
+          <button type="button" (click)="buyFeatured(g)">Comprar featured</button>
+        </article>
+        <article *ngFor="let f of featuredPlacements" class="row">
+          <div>
+            <strong>Activo · {{ f.game_name }}</strong>
+            <p>Hasta {{ f.ends_at | date:'medium' }}</p>
+          </div>
+          <span>{{ f.amount_paid | currency:'USD':'symbol':'1.2-2' }}</span>
+        </article>
       </section>
 
       <section class="card wide">

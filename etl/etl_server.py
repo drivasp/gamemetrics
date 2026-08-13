@@ -26,6 +26,9 @@ jobs = {
     "phase3":      {"status": "idle", "mensaje": ""},
     "phase4":      {"status": "idle", "mensaje": ""},
     "phase5":      {"status": "idle", "mensaje": ""},
+    "cloud_saves": {"status": "idle", "mensaje": ""},
+    "locale_tax":  {"status": "idle", "mensaje": ""},
+    "user_roles":  {"status": "idle", "mensaje": ""},
 }
 
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
@@ -273,6 +276,36 @@ def create_phase5_tables():
         return jsonify({"mensaje": "Ya esta en ejecucion"}), 409
     threading.Thread(
         target=_run, args=("phase5", ["16_create_phase5_tables.py"]), daemon=True
+    ).start()
+    return jsonify({"mensaje": "Iniciado"})
+
+
+@app.route("/etl/create-cloud-saves-table", methods=["POST"])
+def create_cloud_saves_table():
+    if jobs["cloud_saves"]["status"] == "running":
+        return jsonify({"mensaje": "Ya esta en ejecucion"}), 409
+    threading.Thread(
+        target=_run, args=("cloud_saves", ["17_create_cloud_saves_table.py"]), daemon=True
+    ).start()
+    return jsonify({"mensaje": "Iniciado"})
+
+
+@app.route("/etl/create-locale-tax-tables", methods=["POST"])
+def create_locale_tax_tables():
+    if jobs["locale_tax"]["status"] == "running":
+        return jsonify({"mensaje": "Ya esta en ejecucion"}), 409
+    threading.Thread(
+        target=_run, args=("locale_tax", ["18_create_locale_tax_tables.py"]), daemon=True
+    ).start()
+    return jsonify({"mensaje": "Iniciado"})
+
+
+@app.route("/etl/create-user-roles-table", methods=["POST"])
+def create_user_roles_table():
+    if jobs["user_roles"]["status"] == "running":
+        return jsonify({"mensaje": "Ya esta en ejecucion"}), 409
+    threading.Thread(
+        target=_run, args=("user_roles", ["19_create_user_roles_table.py"]), daemon=True
     ).start()
     return jsonify({"mensaje": "Iniciado"})
 

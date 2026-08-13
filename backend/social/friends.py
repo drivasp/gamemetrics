@@ -14,19 +14,28 @@ from social.servicio import notify, post_activity
 
 router = APIRouter(prefix="/friends", tags=["friends"])
 
+ONLINE_MS = 2 * 60 * 1000
+AWAY_MS = 10 * 60 * 1000
+
 
 class FriendRequestDTO(BaseModel):
     email: str = Field(min_length=3, max_length=200)
 
 
+class PresenceDTO(BaseModel):
+    status: str = Field(default="online", max_length=32)
+    detail: str = Field(default="", max_length=120)
+
+
 async def _user_by_email(email: str) -> tuple[str, str] | None:
+    needle = email.strip().lower()
     rows = await pinot_query(
-        f"SELECT user_id, display_name FROM fact_users "
-        f"WHERE email = '{esc(email.strip().lower())}' AND deleted = false LIMIT 1"
+        f"SELECT user_id, display_name, email FROM fact_users "
+        f"WHERE lower(email) = '{esc(needle)}' AND deleted = false LIMIT 1"
     )
     if not rows:
         return None
-    return str(rows[0][0]), (rows[0][1] or email)
+    return str(rows[0][0]), (rows[0][1] or rows[0][2] or email)
 
 
 async def _user_meta(user_id: str) -> dict:
@@ -44,6 +53,86 @@ async def _user_meta(user_id: str) -> dict:
     }
 
 
+async def _presence_map(user_ids: list[str]) -> dict[str, dict]:
+    """last_seen / status for a set of users via dedicated presence sessions."""
+    if not user_ids:
+        return {}
+    now_ms = int(time.time() * 1000)
+    # Query recent sessions and keep max last_seen per user
+    rows = await pinot_query(
+        f"SELECT user_id, last_seen_at, device_info FROM fact_user_sessions "
+        f"WHERE deleted = false ORDER BY last_seen_at DESC LIMIT 500"
+    )
+    id_set = set(user_ids)
+    out: dict[str, dict] = {}
+    for uid, last_seen, device in rows:
+        uid_s = str(uid)
+        if uid_s not in id_set or uid_s in out:
+            continue
+        try:
+            ls = int(last_seen or 0)
+        except Exception:
+            ls = 0
+        age = now_ms - ls if ls else 10**12
+        if age <= ONLINE_MS:
+            status = "online"
+        elif age <= AWAY_MS:
+            status = "away"
+        else:
+            status = "offline"
+        detail = ""
+        info = str(device or "")
+        if info.startswith("playing:"):
+            detail = info[8:][:80]
+            if status == "online":
+                status = "playing"
+        out[uid_s] = {
+            "online": status in ("online", "playing"),
+            "status": status,
+            "last_seen_at": str(ls),
+            "detail": detail,
+        }
+    for uid in user_ids:
+        if uid not in out:
+            out[uid] = {
+                "online": False,
+                "status": "offline",
+                "last_seen_at": "0",
+                "detail": "",
+            }
+    return out
+
+
+async def heartbeat(user_id: str, status: str = "online", detail: str = "") -> dict:
+    now_ms = int(time.time() * 1000)
+    session_id = f"presence_{user_id}"
+    device = f"playing:{detail}" if status == "playing" and detail else (status or "online")
+    await kafka_send("fact_user_sessions", session_id, {
+        "session_id": session_id,
+        "user_id": user_id,
+        "device_info": device[:200],
+        "ip_hash": "presence",
+        "last_seen_at": now_ms,
+        "expires_at": now_ms + 7 * 24 * 3600 * 1000,
+        "created_at": now_ms,
+        "deleted": False,
+    })
+    return {"status": status, "last_seen_at": str(now_ms), "detail": detail}
+
+
+@router.post("/presence")
+async def post_presence(
+    body: PresenceDTO | None = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    _, user_id = require_token(authorization)
+    req = body or PresenceDTO()
+    status = (req.status or "online").lower()
+    if status not in ("online", "away", "offline", "playing"):
+        status = "online"
+    return await heartbeat(user_id, status, req.detail or "")
+
+
 @router.get("")
 async def list_friends(authorization: Annotated[str | None, Header()] = None):
     _, user_id = require_token(authorization)
@@ -54,6 +143,8 @@ async def list_friends(authorization: Annotated[str | None, Header()] = None):
         f"AND deleted = false LIMIT 200"
     )
     friends, incoming, outgoing = [], [], []
+    other_ids: list[str] = []
+    pending_items: list[tuple[str, dict]] = []
     for fid, a, b, status, created in rows:
         status = str(status or "")
         other = b if a == user_id else a
@@ -65,12 +156,30 @@ async def list_friends(authorization: Annotated[str | None, Header()] = None):
             "user": meta,
         }
         if status == "accepted":
-            friends.append(item)
+            other_ids.append(str(other))
+            pending_items.append(("friends", item))
         elif status == "pending":
             if b == user_id:
                 incoming.append(item)
             else:
                 outgoing.append(item)
+
+    presence = await _presence_map(other_ids)
+    for bucket, item in pending_items:
+        pid = str(item["user"]["user_id"])
+        p = presence.get(pid, {})
+        item["online"] = bool(p.get("online"))
+        item["presence"] = p.get("status") or "offline"
+        item["presence_detail"] = p.get("detail") or ""
+        item["last_seen_at"] = p.get("last_seen_at") or "0"
+        friends.append(item)
+
+    # Also heartbeat the caller so they appear online to others
+    try:
+        await heartbeat(user_id, "online")
+    except Exception:
+        pass
+
     return {"friends": friends, "incoming": incoming, "outgoing": outgoing}
 
 

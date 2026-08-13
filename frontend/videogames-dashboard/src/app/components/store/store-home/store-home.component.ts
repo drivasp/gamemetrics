@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { forkJoin, timeout, catchError, of } from 'rxjs';
+import { timeout, catchError, of } from 'rxjs';
 import { StoreService, StoreGame } from '../../../services/store.service';
 import { MatIconModule } from '@angular/material/icon';
 import { StoreGameCardComponent } from '../store-game-card/store-game-card.component';
@@ -36,22 +36,24 @@ export class StoreHomeComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    forkJoin({
-      featured: this.svc.getFeatured().pipe(catchError(() => of([]))),
-      newReleases: this.svc.getNewReleases().pipe(catchError(() => of([]))),
-      popular: this.svc.getPopular().pipe(catchError(() => of([]))),
-      freeGames: this.svc.getFreeGames().pipe(catchError(() => of([]))),
-    }).pipe(timeout(60000)).subscribe({
-      next: ({ featured, newReleases, popular, freeGames }) => {
-        this.featured = featured;
-        this.newReleases = newReleases;
-        this.popular = popular;
-        this.freeGames = freeGames;
-        this.loading = false;
-        this.cdr.detectChanges();
-      },
-      error: () => { this.loading = false; this.cdr.detectChanges(); },
-    });
+    // Carga por sección: un endpoint lento no bloquea toda la tienda.
+    const load = <T>(obs: ReturnType<StoreService['getFeatured']>, assign: (v: StoreGame[]) => void) => {
+      obs.pipe(
+        timeout(8000),
+        catchError(() => of([] as StoreGame[])),
+      ).subscribe({
+        next: (games) => {
+          assign(games);
+          this.loading = false;
+          this.cdr.detectChanges();
+        },
+      });
+    };
+
+    load(this.svc.getFeatured(), (g) => { this.featured = g; });
+    load(this.svc.getNewReleases(), (g) => { this.newReleases = g; });
+    load(this.svc.getPopular(), (g) => { this.popular = g; });
+    load(this.svc.getFreeGames(), (g) => { this.freeGames = g; });
   }
 
   setSpot(i: number): void {

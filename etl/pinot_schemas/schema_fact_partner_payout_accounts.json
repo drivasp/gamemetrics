@@ -1,0 +1,14 @@
+{
+  "schemaName": "fact_partner_payout_accounts",
+  "dimensionFieldSpecs": [
+    {"name": "partner_id", "dataType": "STRING"},
+    {"name": "stripe_account_id", "dataType": "STRING"},
+    {"name": "onboarding_status", "dataType": "STRING"},
+    {"name": "payouts_enabled", "dataType": "BOOLEAN"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "dateTimeFieldSpecs": [
+    {"name": "updated_at", "dataType": "LONG", "format": "1:MILLISECONDS:EPOCH", "granularity": "1:MILLISECONDS"}
+  ],
+  "primaryKeyColumns": ["partner_id"]
+}

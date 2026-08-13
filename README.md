@@ -46,9 +46,11 @@ Plataforma digital de **análisis, descubrimiento y comercialización de videoju
 ### Biblioteca y launcher (`biblioteca`, `launcher`)
 
 - Biblioteca con grid de juegos comprados y portadas.
-- **Instalar → descargar → Jugar** con overlay de sesión y cronómetro.
+- **Instalar** descarga un ZIP real (MinIO / disco) con progreso por bytes y verificación SHA-256.
+- Cliente opcional **Electron** en `desktop/` para instalar en disco y abrir el juego local.
 - Panel lateral: logros, tiempo jugado, desinstalar (conserva progreso).
 - Reembolso integrado desde cada juego.
+- Guía: [`docs/FASE1_DISTRIBUCION.md`](docs/FASE1_DISTRIBUCION.md) · Fase 2: [`docs/FASE2_DISTRIBUCION.md`](docs/FASE2_DISTRIBUCION.md) (updates, cloud saves, presence, publisher upload).
 
 ### Plataforma social y regalos (`gifts`, `social`, `alerts`, `community`, `events`)
 

@@ -13,6 +13,9 @@ export interface LauncherLibraryItem {
   install_status: string;
   progress_pct: number;
   build_id: string;
+  installed_version?: string;
+  latest_version?: string;
+  update_available?: boolean;
   playtime_minutes: number;
   active_session_id: string | null;
 }
@@ -87,18 +90,131 @@ export class LauncherService {
 
   startInstall(productId: string, gameName = ''): Observable<{
     install: { status: string; progress_pct: number; build_id: string };
-    build: { file_size_bytes: number; version: string };
+    build: { file_size_bytes: number; version: string; checksum?: string };
     download_token: string;
+    download_url: string;
     message: string;
   }> {
     const q = gameName ? `?game_name=${encodeURIComponent(gameName)}` : '';
     return this.http.post<any>(`/launcher/install/${productId}${q}`, {}, { headers: this.headers() });
   }
 
+  checkUpdates(productId: string, gameName = ''): Observable<{
+    update_available: boolean;
+    installed_version: string;
+    latest_build: { build_id: string; version: string; checksum?: string; file_size_bytes?: number };
+  }> {
+    const q = gameName ? `?game_name=${encodeURIComponent(gameName)}` : '';
+    return this.http.get<any>(`/launcher/updates/${productId}${q}`, { headers: this.headers() });
+  }
+
+  startUpdate(productId: string, gameName = ''): Observable<{
+    install?: { status: string; progress_pct: number; build_id: string };
+    build?: { file_size_bytes: number; version: string; checksum?: string };
+    download_token?: string;
+    download_url?: string;
+    update_available: boolean;
+    message: string;
+  }> {
+    const q = gameName ? `?game_name=${encodeURIComponent(gameName)}` : '';
+    return this.http.post<any>(`/launcher/install/${productId}/update${q}`, {}, { headers: this.headers() });
+  }
+
+  // Cloud saves
+  listSaves(productId: string): Observable<{ items: any[]; max_slot: number }> {
+    return this.http.get<any>(`/saves/${productId}`, { headers: this.headers() });
+  }
+
+  putSave(productId: string, slot: number, data: Record<string, unknown>, label = ''): Observable<any> {
+    return this.http.put(`/saves/${productId}`, { slot, data, label }, { headers: this.headers() });
+  }
+
+  getSave(productId: string, slot: number): Observable<any> {
+    return this.http.get(`/saves/${productId}/${slot}`, { headers: this.headers() });
+  }
+
+  deleteSave(productId: string, slot: number): Observable<any> {
+    return this.http.delete(`/saves/${productId}/${slot}`, { headers: this.headers() });
+  }
+
   updateProgress(productId: string, progressPct: number): Observable<{ install: { status: string; progress_pct: number } }> {
     return this.http.patch<any>(`/launcher/install/${productId}/progress`, {
       progress_pct: progressPct,
     }, { headers: this.headers() });
+  }
+
+  verifyInstall(productId: string, checksum?: string): Observable<{
+    install: { status: string; progress_pct: number };
+    message: string;
+  }> {
+    return this.http.post<any>(`/launcher/install/${productId}/verify`, {
+      checksum: checksum || null,
+    }, { headers: this.headers() });
+  }
+
+  /**
+   * Download the ZIP package with byte-level progress.
+   * Returns sha256 hex of the payload when SubtleCrypto is available.
+   */
+  async downloadPackage(
+    downloadUrl: string,
+    onProgress: (pct: number) => void,
+  ): Promise<{ bytes: ArrayBuffer; checksum: string }> {
+    const token = this.auth.getToken();
+    const res = await fetch(downloadUrl, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      throw new Error(`Descarga fallida (${res.status})`);
+    }
+    const total = Number(res.headers.get('Content-Length') || 0);
+    const expectedChecksum = res.headers.get('X-Checksum-SHA256') || '';
+    const reader = res.body?.getReader();
+    if (!reader) {
+      const buf = await res.arrayBuffer();
+      onProgress(100);
+      const checksum = await this.sha256(buf);
+      return { bytes: buf, checksum: expectedChecksum || checksum };
+    }
+
+    const chunks: Uint8Array[] = [];
+    let received = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        chunks.push(value);
+        received += value.length;
+        if (total > 0) {
+          onProgress(Math.min(99, Math.round((received / total) * 100)));
+        } else {
+          onProgress(Math.min(95, Math.round(received / 10240)));
+        }
+      }
+    }
+    const bytes = this.concatChunks(chunks);
+    onProgress(100);
+    const checksum = expectedChecksum || (await this.sha256(bytes));
+    return { bytes, checksum };
+  }
+
+  private concatChunks(chunks: Uint8Array[]): ArrayBuffer {
+    const total = chunks.reduce((n, c) => n + c.length, 0);
+    const out = new Uint8Array(total);
+    let offset = 0;
+    for (const c of chunks) {
+      out.set(c, offset);
+      offset += c.length;
+    }
+    return out.buffer;
+  }
+
+  private async sha256(buf: ArrayBuffer): Promise<string> {
+    if (!globalThis.crypto?.subtle) return '';
+    const hash = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(hash))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
   }
 
   uninstall(productId: string): Observable<{ install: { status: string }; message: string }> {

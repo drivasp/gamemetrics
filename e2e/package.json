@@ -4,6 +4,12 @@
   "scripts": {
     "test": "playwright test",
     "test:video": "playwright test video-10-cu",
+    "test:fase1": "playwright test fase1-distribucion",
+    "test:fase2": "playwright test fase2-plataforma",
+    "test:fase3": "playwright test fase3-regiones",
+    "test:fase0": "playwright test fase0-roles",
+    "test:dinero": "playwright test fase-dinero-ledger",
+    "test:payout-saas": "playwright test fase-payout-saas",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed"
   },

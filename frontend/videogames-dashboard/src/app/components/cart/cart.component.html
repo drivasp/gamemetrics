@@ -32,7 +32,7 @@
         <div class="info">
           <h3>{{ item.game_name }}</h3>
         </div>
-        <div class="price">${{ item.line_total.toFixed(2) }}</div>
+        <div class="price">{{ money(item.line_total) }}</div>
         <button class="btn-remove" (click)="remove(item.product_id)" title="Quitar" aria-label="Quitar">
           <mat-icon class="gm-icon-sm">close</mat-icon>
         </button>
@@ -41,12 +41,23 @@
 
     <aside class="summary">
       <h2>Resumen</h2>
-      <div class="row"><span>Subtotal</span><span>${{ cart.subtotal.toFixed(2) }}</span></div>
+      <p class="region-note" *ngIf="cart.country_code">
+        Región {{ cart.country_code }} · catálogo {{ cart.pricing_region }} · {{ cart.currency || 'USD' }}
+      </p>
+      <div class="row"><span>Subtotal</span><span>{{ money(cart.subtotal) }}</span></div>
       <div class="row" *ngIf="cart.discount_total > 0">
-        <span>Descuento</span><span>-${{ cart.discount_total.toFixed(2) }}</span>
+        <span>Descuento</span><span>-{{ money(cart.discount_total) }}</span>
       </div>
-      <div class="row total"><span>Total</span><span>${{ cart.total.toFixed(2) }} USD</span></div>
-      <p class="note">Pago seguro estilo Steam (sandbox)</p>
+      <div class="row"><span>Mercancía</span><span>{{ money(cart.total) }}</span></div>
+      <div class="row" *ngIf="(cart.tax_amount || 0) > 0">
+        <span>{{ cart.tax_name || 'Impuesto' }} ({{ cart.tax_rate_pct }}%)</span>
+        <span>{{ money(cart.tax_amount || 0) }}</span>
+      </div>
+      <div class="row total">
+        <span>Total</span>
+        <span>{{ money(cart.total_with_tax ?? cart.total) }} {{ cart.currency || 'USD' }}</span>
+      </div>
+      <p class="note">Impuestos según tu país de facturación</p>
       <button class="btn-checkout" (click)="checkout()">
         Continuar al pago
       </button>

@@ -1,0 +1,122 @@
+<div class="viewer-page" *ngIf="true">
+  <div class="no-print toolbar-top">
+    <a routerLink="/reports" class="back">
+      <mat-icon>arrow_back</mat-icon> Centro de Reportes
+    </a>
+  </div>
+
+  <div class="state" *ngIf="loading">Generando informe…</div>
+  <div class="state err" *ngIf="!loading && error">{{ error }}</div>
+
+  <article class="report-sheet" *ngIf="!loading && payload as p">
+    <header class="sheet-header">
+      <div class="left">
+        <p class="corp">GAME METRICS S.A.</p>
+        <p class="sub">Confidential · Operational Report</p>
+      </div>
+      <div class="right">
+        <p class="code-line">Informe · {{ p.meta.code }} · {{ p.meta.type === 'simple' ? 'SIMPLE' : 'COMPUESTO' }}</p>
+        <p class="area">{{ p.meta.area }}</p>
+      </div>
+    </header>
+
+    <div class="sheet-title-block">
+      <h1>{{ p.meta.title }}</h1>
+      <p class="question">{{ p.meta.question }}</p>
+      <div class="meta-row">
+        <span>Generado: <strong>{{ p.generated_at }}</strong></span>
+        <span>Registros: <strong>{{ p.row_count }}</strong></span>
+        <span>Fuente: <strong>{{ p.meta.source }}</strong></span>
+      </div>
+    </div>
+
+    <div class="controls no-print">
+      <div class="filters" *ngIf="code === 'GM-S01' || code === 'GM-S03'">
+        <label>
+          Estado
+          <select [(ngModel)]="statusFilter" (ngModelChange)="reload()">
+            <ng-container *ngIf="code === 'GM-S01'">
+              <option value="pending">pending</option>
+              <option value="approved">approved</option>
+              <option value="rejected">rejected</option>
+            </ng-container>
+            <ng-container *ngIf="code === 'GM-S03'">
+              <option value="open">open</option>
+              <option value="closed">closed</option>
+            </ng-container>
+          </select>
+        </label>
+      </div>
+
+      <div class="filters" *ngIf="code === 'GM-C02'">
+        <label>
+          Estudio
+          <select [(ngModel)]="partnerId" (ngModelChange)="reload()">
+            <option value="">Selecciona un estudio…</option>
+            <option *ngFor="let partner of p.partners" [value]="partner.partner_id">
+              {{ partner.company_name }}
+            </option>
+          </select>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn ghost" (click)="exportCsv()" [disabled]="csvBusy">
+          <mat-icon>download</mat-icon> Exportar CSV
+        </button>
+        <button type="button" class="btn primary" (click)="exportPdf()">
+          <mat-icon>picture_as_pdf</mat-icon> Exportar PDF
+        </button>
+      </div>
+    </div>
+
+    <section class="kpi-strip" *ngIf="p.kpis?.length">
+      <div class="kpi" *ngFor="let k of p.kpis">
+        <span class="kpi-label">{{ k.label }}</span>
+        <strong class="kpi-value">{{ formatKpi(k.value, k.format) }}</strong>
+      </div>
+    </section>
+
+    <div class="table-wrap" *ngIf="p.rows.length; else empty">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th *ngFor="let col of p.meta.columns"
+                [class.num]="col.align === 'right'">{{ col.label }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of p.rows">
+            <td *ngFor="let col of p.meta.columns"
+                [class.num]="col.align === 'right'"
+                [class.money]="isMoneyKey(col.key) || (col.key === 'value' && row['unit'] === 'USD')">
+              <ng-container [ngSwitch]="cellKind(col.key, row)">
+                <ng-container *ngSwitchCase="'money'">
+                  {{ cellValue(row, col.key) | currency:'USD':'symbol':'1.2-2' }}
+                </ng-container>
+                <span *ngSwitchCase="'pill'" class="pill" [attr.data-v]="cellValue(row, col.key)">
+                  {{ cellValue(row, col.key) }}
+                </span>
+                <ng-container *ngSwitchDefault>
+                  {{ cellValue(row, col.key) }}
+                </ng-container>
+              </ng-container>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ng-template #empty>
+      <div class="empty">
+        <p>No hay registros para los filtros seleccionados.</p>
+        <p class="hint" *ngIf="code === 'GM-C02' && !partnerId">Selecciona un estudio para ver sus ganancias.</p>
+      </div>
+    </ng-template>
+
+    <footer class="sheet-footer">
+      <p>{{ p.disclaimer }}</p>
+      <p class="desc">{{ p.meta.description }}</p>
+    </footer>
+  </article>
+</div>

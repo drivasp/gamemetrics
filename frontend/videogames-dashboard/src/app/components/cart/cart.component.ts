@@ -47,5 +47,14 @@ export class CartComponent implements OnInit {
     this.router.navigate(['/payment']);
   }
 
+  money(n: number): string {
+    const cur = this.cart?.currency || 'USD';
+    try {
+      return new Intl.NumberFormat('es-MX', { style: 'currency', currency: cur }).format(n);
+    } catch {
+      return `${cur} ${n.toFixed(2)}`;
+    }
+  }
+
   goStore(): void { this.router.navigate(['/store']); }
 }

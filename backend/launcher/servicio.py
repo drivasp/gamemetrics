@@ -1,14 +1,14 @@
 """Servicios de distribución digital (builds, install, play, achievements)."""
 from __future__ import annotations
 
-import hashlib
+import re
 import time
 import uuid
 
 from shared.auth_deps import esc
 from shared.cliente_pinot import pinot_query
 from shared.kafka_producer import kafka_send
-from shared.pinot_utils import to_bool, to_ms
+from shared.storage import ensure_package, object_exists, put_bytes, sha256_hex
 
 DEFAULT_ACHIEVEMENTS = [
     ("first_launch", "Primer arranque", "Inicia el juego por primera vez.", 5),
@@ -18,51 +18,150 @@ DEFAULT_ACHIEVEMENTS = [
 ]
 
 
-async def ensure_build(product_id: str, game_name: str = "") -> dict:
+def version_key(version: str) -> tuple:
+    """Parse dotted version for comparison (1.0.0 < 1.0.1)."""
+    parts = re.findall(r"\d+", str(version or "0"))
+    nums = [int(p) for p in parts[:4]] or [0]
+    while len(nums) < 4:
+        nums.append(0)
+    return tuple(nums)
+
+
+def _row_to_build(r) -> dict:
+    return {
+        "build_id": r[0],
+        "product_id": r[1],
+        "version": r[2] or "1.0.0",
+        "os": r[3] or "win",
+        "file_path": r[4] or "",
+        "file_size_bytes": int(r[5] or 0),
+        "checksum": r[6] or "",
+        "created_at": str(r[7]),
+    }
+
+
+async def list_builds(product_id: str, limit: int = 20) -> list[dict]:
     rows = await pinot_query(
         f"SELECT build_id, product_id, version, os, file_path, file_size_bytes, checksum, created_at "
         f"FROM fact_builds WHERE product_id = '{esc(product_id)}' AND deleted = false "
-        f"AND os = 'win' ORDER BY created_at DESC LIMIT 1"
+        f"AND os = 'win' ORDER BY created_at DESC LIMIT {int(limit)}"
     )
-    if rows:
-        r = rows[0]
-        return {
-            "build_id": r[0],
-            "product_id": r[1],
-            "version": r[2],
-            "os": r[3],
-            "file_path": r[4],
-            "file_size_bytes": int(r[5] or 0),
-            "checksum": r[6] or "",
-            "created_at": str(r[7]),
-        }
+    builds = [_row_to_build(r) for r in rows]
+    builds.sort(key=lambda b: version_key(b["version"]), reverse=True)
+    return builds
 
+
+async def get_build_by_id(build_id: str) -> dict | None:
+    rows = await pinot_query(
+        f"SELECT build_id, product_id, version, os, file_path, file_size_bytes, checksum, created_at "
+        f"FROM fact_builds WHERE build_id = '{esc(build_id)}' AND deleted = false LIMIT 1"
+    )
+    return _row_to_build(rows[0]) if rows else None
+
+
+async def latest_build(product_id: str) -> dict | None:
+    builds = await list_builds(product_id, limit=50)
+    return builds[0] if builds else None
+
+
+async def register_build(
+    product_id: str,
+    version: str,
+    file_path: str,
+    file_size_bytes: int,
+    checksum: str,
+    os_name: str = "win",
+) -> dict:
+    """Register a new build version in Pinot (does not replace previous versions)."""
+    safe_ver = re.sub(r"[^0-9A-Za-z._-]", "_", version)[:32] or "1.0.0"
+    build_id = f"b_{product_id[:10]}_{safe_ver}_{uuid.uuid4().hex[:6]}"
     now_ms = int(time.time() * 1000)
-    build_id = f"b_{product_id[:12]}_win"
-    size = 800_000_000 + (int(hashlib.md5(product_id.encode()).hexdigest()[:8], 16) % 2_000_000_000)
-    checksum = hashlib.sha256(f"{product_id}:{build_id}".encode()).hexdigest()[:16]
-    label = (game_name or product_id).replace(" ", "_")[:40]
-    path = f"builds/{product_id}/{label}_1.0.0_win.zip"
-    await kafka_send("fact_builds", build_id, {
+    payload = {
         "build_id": build_id,
         "product_id": product_id,
-        "version": "1.0.0",
-        "os": "win",
-        "file_path": path,
-        "file_size_bytes": size,
+        "version": safe_ver,
+        "os": os_name,
+        "file_path": file_path,
+        "file_size_bytes": int(file_size_bytes),
         "checksum": checksum,
         "created_at": now_ms,
         "deleted": False,
-    })
+    }
+    await kafka_send("fact_builds", build_id, payload)
+    return {**payload, "created_at": str(now_ms)}
+
+
+async def publish_build_bytes(
+    product_id: str,
+    version: str,
+    data: bytes,
+    game_name: str = "",
+) -> dict:
+    """Upload ZIP bytes and register as a new fact_builds row."""
+    safe_ver = re.sub(r"[^0-9A-Za-z._-]", "_", version)[:32] or "1.0.0"
+    label = "".join(c if c.isalnum() or c in "-_" else "_" for c in (game_name or product_id))[:40]
+    key = f"builds/{product_id}/{label}_{safe_ver}_win.zip"
+    put_bytes(key, data, content_type="application/zip")
+    return await register_build(
+        product_id, safe_ver, key, len(data), sha256_hex(data),
+    )
+
+
+async def ensure_build(product_id: str, game_name: str = "") -> dict:
+    """Ensure Pinot build metadata + real ZIP package in object storage."""
+    existing = await latest_build(product_id)
+    if existing:
+        path = existing["file_path"]
+        if path and not object_exists(path):
+            pkg = ensure_package(product_id, game_name, existing["version"] or "1.0.0")
+            existing["file_path"] = pkg["file_path"]
+            existing["file_size_bytes"] = pkg["file_size_bytes"]
+            existing["checksum"] = pkg["checksum"]
+            await kafka_send("fact_builds", existing["build_id"], {
+                "build_id": existing["build_id"],
+                "product_id": existing["product_id"],
+                "version": existing["version"],
+                "os": existing.get("os") or "win",
+                "file_path": pkg["file_path"],
+                "file_size_bytes": pkg["file_size_bytes"],
+                "checksum": pkg["checksum"],
+                "created_at": int(time.time() * 1000),
+                "deleted": False,
+            })
+        return existing
+
+    pkg = ensure_package(product_id, game_name, "1.0.0")
+    return await register_build(
+        product_id, "1.0.0", pkg["file_path"], pkg["file_size_bytes"], pkg["checksum"],
+    )
+
+
+async def update_available(user_id: str, product_id: str, game_name: str = "") -> dict:
+    """Compare installed build vs latest published build."""
+    install = await get_install_state(user_id, product_id)
+    latest = await ensure_build(product_id, game_name)
+    installed_build = None
+    installed_version = ""
+    if install.get("build_id"):
+        installed_build = await get_build_by_id(install["build_id"])
+        installed_version = (installed_build or {}).get("version") or ""
+    has_update = False
+    if install.get("status") == "installed" and latest:
+        if not installed_version:
+            has_update = install.get("build_id") != latest["build_id"]
+        else:
+            has_update = version_key(latest["version"]) > version_key(installed_version)
+            if not has_update and install.get("build_id") != latest["build_id"]:
+                # Same version string but different checksum/build → treat as update
+                if (installed_build or {}).get("checksum") != latest.get("checksum"):
+                    has_update = True
     return {
-        "build_id": build_id,
         "product_id": product_id,
-        "version": "1.0.0",
-        "os": "win",
-        "file_path": path,
-        "file_size_bytes": size,
-        "checksum": checksum,
-        "created_at": str(now_ms),
+        "update_available": has_update,
+        "installed_status": install.get("status") or "not_installed",
+        "installed_build_id": install.get("build_id") or "",
+        "installed_version": installed_version,
+        "latest_build": latest,
     }
 
 

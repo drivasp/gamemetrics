@@ -1,0 +1,339 @@
+.viewer-page {
+  min-height: calc(100vh - 64px);
+  background: #0e1419;
+  color: #1b2838;
+  padding: 1.25rem 1.5rem 3rem;
+  font-family: "Motiva Sans", "Segoe UI", system-ui, sans-serif;
+}
+
+.toolbar-top {
+  max-width: 960px;
+  margin: 0 auto 0.75rem;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #66c0f4;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.back mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.state {
+  max-width: 960px;
+  margin: 2rem auto;
+  text-align: center;
+  color: #8f98a0;
+}
+
+.state.err { color: #ff7b72; }
+
+.report-sheet {
+  max-width: 960px;
+  margin: 0 auto;
+  background: #f5f7fa;
+  color: #1b2838;
+  border: 1px solid #c6d4df;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  padding: 1.75rem 2rem 1.5rem;
+}
+
+.sheet-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 2px solid #1b2838;
+  padding-bottom: 0.85rem;
+  margin-bottom: 1.1rem;
+}
+
+.corp {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #1b2838;
+}
+
+.sub {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: #5c6b78;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.right { text-align: right; }
+
+.code-line {
+  margin: 0;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1b2838;
+}
+
+.area {
+  margin: 0.25rem 0 0;
+  font-size: 0.72rem;
+  color: #4b6a82;
+}
+
+.sheet-title-block h1 {
+  margin: 0 0 0.4rem;
+  font-size: 1.45rem;
+  font-weight: 650;
+  color: #171a21;
+  letter-spacing: -0.02em;
+}
+
+.question {
+  margin: 0 0 0.75rem;
+  font-size: 0.92rem;
+  color: #3d4f5f;
+  font-style: italic;
+}
+
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  font-size: 0.78rem;
+  color: #5c6b78;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #c6d4df;
+}
+
+.meta-row strong { color: #1b2838; font-weight: 600; }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin: 1rem 0 1.1rem;
+}
+
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5c6b78;
+}
+
+.filters select {
+  min-width: 220px;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid #8f98a0;
+  background: #fff;
+  color: #1b2838;
+  font-size: 0.85rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid #2a475e;
+  background: #fff;
+  color: #1b2838;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.btn mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.btn.primary {
+  background: #1b2838;
+  color: #fff;
+  border-color: #1b2838;
+}
+
+.btn.ghost:hover { border-color: #66c0f4; }
+.btn.primary:hover { background: #2a475e; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1.1rem;
+}
+
+.kpi {
+  background: #fff;
+  border: 1px solid #c6d4df;
+  padding: 0.65rem 0.75rem;
+}
+
+.kpi-label {
+  display: block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5c6b78;
+  margin-bottom: 0.25rem;
+}
+
+.kpi-value {
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  color: #171a21;
+  font-weight: 700;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid #c6d4df;
+  background: #fff;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.data-table th {
+  text-align: left;
+  background: #e8eef3;
+  color: #1b2838;
+  font-weight: 650;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid #c6d4df;
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid #e4ebf0;
+  color: #1b2838;
+  vertical-align: top;
+}
+
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:nth-child(even) td { background: #fafcfd; }
+
+.num, .money {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.8rem;
+}
+
+.pill {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: 2px;
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-transform: lowercase;
+  background: #e8eef3;
+  color: #2a475e;
+}
+
+.pill[data-v="pending"],
+.pill[data-v="open"],
+.pill[data-v="high"] {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.pill[data-v="approved"],
+.pill[data-v="paid"],
+.pill[data-v="active"] {
+  background: #d4edda;
+  color: #155724;
+}
+
+.pill[data-v="rejected"],
+.pill[data-v="closed"] {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.empty {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  background: #fff;
+  border: 1px dashed #c6d4df;
+  color: #5c6b78;
+}
+
+.empty .hint {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.sheet-footer {
+  margin-top: 1.25rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #c6d4df;
+  font-size: 0.72rem;
+  color: #5c6b78;
+  line-height: 1.4;
+}
+
+.sheet-footer .desc { margin: 0.35rem 0 0; }
+
+@media print {
+  .no-print, .navbar, app-navbar, .toolbar-top { display: none !important; }
+
+  .viewer-page {
+    background: #fff;
+    padding: 0;
+    min-height: auto;
+  }
+
+  .report-sheet {
+    max-width: none;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .report-sheet {
+    page-break-inside: avoid;
+  }
+
+  .data-table th { background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+@page {
+  size: A4;
+  margin: 1.5cm;
+}
+
+@media (max-width: 720px) {
+  .viewer-page { padding: 1rem; }
+  .report-sheet { padding: 1.1rem; }
+  .sheet-header { flex-direction: column; }
+  .right { text-align: left; }
+}

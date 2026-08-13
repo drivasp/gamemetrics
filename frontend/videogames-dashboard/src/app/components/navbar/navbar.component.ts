@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, HostListener, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -7,6 +7,7 @@ import { CartService } from '../../services/cart.service';
 import { WalletService } from '../../services/wallet.service';
 import { GiftsService } from '../../services/gifts.service';
 import { SocialService } from '../../services/social.service';
+import { LocaleService, CountryLocale, UserLocale } from '../../services/locale.service';
 import { MatIconModule } from '@angular/material/icon';
 import { ModalService } from '../../services/modal.service';
 
@@ -16,12 +17,13 @@ import { ModalService } from '../../services/modal.service';
   imports: [CommonModule, RouterLink, RouterLinkActive, MatIconModule],
   templateUrl: './navbar.component.html',
 })
-export class NavbarComponent implements OnInit {
+export class NavbarComponent implements OnInit, OnDestroy {
   private auth = inject(AuthService);
   private cartSvc = inject(CartService);
   private walletSvc = inject(WalletService);
   private giftsSvc = inject(GiftsService);
   private social = inject(SocialService);
+  private localeSvc = inject(LocaleService);
   private modal = inject(ModalService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
@@ -29,18 +31,36 @@ export class NavbarComponent implements OnInit {
   user: User | null = null;
   dropdownOpen = false;
   notifOpen = false;
+  regionOpen = false;
   cartCount = 0;
   walletBalance = 0;
   giftPending = 0;
   notifUnread = 0;
   notifications: any[] = [];
   isStoreArea = false;
+  countries: CountryLocale[] = [];
+  locale: UserLocale | null = null;
+  selectedCountry = 'US';
+  private presenceTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
+    this.localeSvc.loadCountries();
+    this.localeSvc.refresh();
+    this.localeSvc.countriesList$.subscribe(list => {
+      this.countries = list;
+      this.cdr.detectChanges();
+    });
+    this.localeSvc.myLocale$.subscribe(loc => {
+      this.locale = loc;
+      this.selectedCountry = loc.country_code;
+      this.cdr.detectChanges();
+    });
+
     this.updateStoreArea(this.router.url);
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: NavigationEnd) => {
       this.updateStoreArea(e.urlAfterRedirects);
       this.notifOpen = false;
+      this.regionOpen = false;
       if (this.user && e.urlAfterRedirects.startsWith('/my-gifts')) {
         this.giftsSvc.refreshPending();
       }
@@ -52,6 +72,8 @@ export class NavbarComponent implements OnInit {
         this.walletSvc.refresh();
         this.giftsSvc.refreshPending();
         this.social.refreshUnread();
+        this.localeSvc.refresh();
+        this.startPresenceHeartbeat();
       } else {
         this.cartCount = 0;
         this.walletBalance = 0;
@@ -60,6 +82,8 @@ export class NavbarComponent implements OnInit {
         this.notifications = [];
         this.giftsSvc.clearPending();
         this.social.clearUnread();
+        this.stopPresenceHeartbeat();
+        this.localeSvc.refresh();
       }
       this.cdr.detectChanges();
     });
@@ -84,6 +108,24 @@ export class NavbarComponent implements OnInit {
     });
   }
 
+  get currentCountryName(): string {
+    const fromList = this.countries.find(c => c.country_code === this.selectedCountry)?.name;
+    return fromList || this.locale?.name || this.locale?.country_name || this.selectedCountry;
+  }
+
+  get currentFlag(): string {
+    return this.countries.find(c => c.country_code === this.selectedCountry)?.flag
+      || this.locale?.flag
+      || '🌐';
+  }
+
+  toggleRegion(e: MouseEvent): void {
+    e.stopPropagation();
+    this.dropdownOpen = false;
+    this.notifOpen = false;
+    this.regionOpen = !this.regionOpen;
+  }
+
   refreshCartCount(): void {
     this.cartSvc.getCart().subscribe({
       next: (c) => { this.cartCount = c.item_count; },
@@ -94,6 +136,7 @@ export class NavbarComponent implements OnInit {
   toggleNotif(e: MouseEvent): void {
     e.stopPropagation();
     this.dropdownOpen = false;
+    this.regionOpen = false;
     this.notifOpen = !this.notifOpen;
     if (this.notifOpen) {
       this.social.getNotifications().subscribe({
@@ -129,6 +172,7 @@ export class NavbarComponent implements OnInit {
 
   toggleDropdown(): void {
     this.notifOpen = false;
+    this.regionOpen = false;
     this.dropdownOpen = !this.dropdownOpen;
   }
 
@@ -157,6 +201,19 @@ export class NavbarComponent implements OnInit {
     this.router.navigate(['/my-partner']);
   }
 
+  goAdmin(): void {
+    this.dropdownOpen = false;
+    this.router.navigate(['/admin']);
+  }
+
+  get isAdmin(): boolean {
+    return this.user?.role === 'admin';
+  }
+
+  get brandHome(): string {
+    return this.isAdmin ? '/' : '/store';
+  }
+
   goFamily(): void {
     this.dropdownOpen = false;
     this.router.navigate(['/my-family']);
@@ -165,7 +222,7 @@ export class NavbarComponent implements OnInit {
   logout(): void {
     this.dropdownOpen = false;
     this.auth.logout();
-    this.router.navigate(['/']);
+    this.router.navigate(['/store']);
   }
 
   @HostListener('document:click', ['$event'])
@@ -173,6 +230,7 @@ export class NavbarComponent implements OnInit {
     const t = e.target as HTMLElement;
     if (!t.closest('.user-menu')) this.dropdownOpen = false;
     if (!t.closest('.notif-menu')) this.notifOpen = false;
+    if (!t.closest('.region-menu')) this.regionOpen = false;
   }
 
   get avatarLabel(): string {
@@ -186,6 +244,25 @@ export class NavbarComponent implements OnInit {
       || url.startsWith('/my-wallet') || url.startsWith('/my-gifts')
       || url.startsWith('/my-friends') || url.startsWith('/my-support')
       || url.startsWith('/my-partner') || url.startsWith('/my-family')
-      || url.startsWith('/profile');
+      || url.startsWith('/profile') || url.startsWith('/admin');
+  }
+
+  private startPresenceHeartbeat(): void {
+    this.stopPresenceHeartbeat();
+    this.social.heartbeat('online').subscribe({ error: () => undefined });
+    this.presenceTimer = setInterval(() => {
+      this.social.heartbeat('online').subscribe({ error: () => undefined });
+    }, 45_000);
+  }
+
+  private stopPresenceHeartbeat(): void {
+    if (this.presenceTimer) {
+      clearInterval(this.presenceTimer);
+      this.presenceTimer = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.stopPresenceHeartbeat();
   }
 }

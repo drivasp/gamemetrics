@@ -1,0 +1,17 @@
+{
+  "name": "gamemetrics-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GameMetrics Desktop Launcher (Phase 1)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron ."
+  },
+  "dependencies": {
+    "extract-zip": "^2.0.1"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0"
+  }
+}

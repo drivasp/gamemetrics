@@ -25,6 +25,10 @@ from social.router import router as social_router
 from community.router import router as community_router
 from events.router import router as events_router
 from alerts.router import router as alerts_router
+from saves.router import router as saves_router
+from regional.router import router as locale_router
+from admin.router import router as admin_router
+from reports.router import router as reports_router
 
 
 @asynccontextmanager
@@ -66,3 +70,7 @@ app.include_router(social_router)
 app.include_router(community_router)
 app.include_router(events_router)
 app.include_router(alerts_router)
+app.include_router(saves_router)
+app.include_router(locale_router)
+app.include_router(admin_router)
+app.include_router(reports_router)

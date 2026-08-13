@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Header, HTTPException, Request
 
 from auth.cliente_jwt import new_id
-from carrito.servicio import fetch_cart
+from carrito.locale_cart import fetch_user_cart
 from checkout.modelos_checkout import CheckoutRequestDTO, CheckoutResponseDTO
 from checkout.servicio import (
     STRIPE_SECRET,
@@ -19,6 +19,7 @@ from checkout.servicio import (
 from coupons.servicio import redeem_coupon, validate_coupon
 from shared.auth_deps import require_token, esc
 from shared.cliente_pinot import pinot_query
+from shared.region_tax import compute_tax
 from wallet.servicio import apply_transaction, get_balance
 
 router = APIRouter(prefix="/checkout", tags=["checkout"])
@@ -34,7 +35,7 @@ async def _user_owns(user_id: str, product_id: str) -> bool:
 
 
 async def _validate_cart(user_id: str):
-    cart = await fetch_cart(user_id)
+    cart = await fetch_user_cart(user_id)
     if not cart.items:
         raise HTTPException(400, "Tu carrito está vacío")
     for item in cart.items:
@@ -59,6 +60,48 @@ async def _apply_coupon(user_id: str, code: str | None, subtotal: float):
     return coupon, coupon.discount_applied, final
 
 
+def _tax_after_coupon(cart, taxable: float) -> dict:
+    tax = compute_tax(taxable, cart.country_code)
+    return tax
+
+
+def _checkout_payload(
+    *,
+    order_id: str,
+    payment_id: str,
+    status: str,
+    message: str,
+    tax: dict,
+    coupon,
+    coupon_discount: float,
+    payment_method: str | None,
+    purchases_count: int = 0,
+    checkout_url: str | None = None,
+    wallet_balance: float | None = None,
+) -> CheckoutResponseDTO:
+    return CheckoutResponseDTO(
+        order_id=order_id,
+        payment_id=payment_id,
+        status=status,
+        total=tax["total_with_tax"],
+        currency=tax["currency"],
+        message=message,
+        purchases_count=purchases_count,
+        checkout_url=checkout_url,
+        coupon_code=coupon.code if coupon else None,
+        coupon_discount=coupon_discount,
+        payment_method=payment_method,
+        wallet_balance=wallet_balance,
+        country_code=tax["country_code"],
+        pricing_region=tax["pricing_region"],
+        tax_name=tax["tax_name"],
+        tax_rate_pct=tax["tax_rate_pct"],
+        taxable_amount=tax["taxable_amount"],
+        tax_amount=tax["tax_amount"],
+        subtotal=tax["taxable_amount"] + coupon_discount,
+    )
+
+
 async def _redeem_if_needed(coupon, user_id: str, order_id: str) -> None:
     if not coupon:
         return
@@ -80,14 +123,17 @@ async def _redeem_if_needed(coupon, user_id: str, order_id: str) -> None:
 async def checkout(
     body: CheckoutRequestDTO | None = None,
     authorization: Annotated[str | None, Header()] = None,
+    idempotency_key_header: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
 ):
     _, user_id = require_token(authorization)
     req = body or CheckoutRequestDTO()
     cart = await _validate_cart(user_id)
 
-    coupon, coupon_discount, final_total = await _apply_coupon(
+    coupon, coupon_discount, taxable = await _apply_coupon(
         user_id, req.coupon_code, cart.total
     )
+    tax = _tax_after_coupon(cart, taxable)
+    final_total = tax["total_with_tax"]
 
     method = (req.payment_method or "auto").lower()
     if method == "auto":
@@ -96,33 +142,61 @@ async def checkout(
         else:
             method = "sandbox"
 
+    # Cartera solo en USD (LATAM / US). EU (EUR) usa sandbox/Stripe.
+    if method == "wallet" and tax["currency"] != "USD":
+        raise HTTPException(
+            400,
+            f"La cartera solo admite USD. Tu región ({tax['country_code']}) usa {tax['currency']}. "
+            "Elige sandbox o Stripe.",
+        )
+
     cart_key = hashlib.sha256(
         "|".join(sorted(f"{i.product_id}:{i.quantity}" for i in cart.items)).encode()
     ).hexdigest()[:16]
     coupon_part = (coupon.code if coupon else "none")
-    idempotency_key = f"checkout_{user_id}_{cart_key}_{coupon_part}_{method}"
+    client_key = (idempotency_key_header or "").strip()
+    if client_key:
+        idempotency_key = f"client_{user_id}_{client_key[:64]}"
+    else:
+        idempotency_key = (
+            f"checkout_{user_id}_{cart_key}_{coupon_part}_{method}_{tax['country_code']}"
+        )
 
     dup = await pinot_query(
-        f"SELECT payment_id FROM fact_payments "
+        f"SELECT payment_id, order_id FROM fact_payments "
         f"WHERE idempotency_key = '{esc(idempotency_key)}' AND status = 'completed' LIMIT 1"
     )
     if dup:
-        raise HTTPException(409, "Esta orden ya fue procesada")
+        raise HTTPException(
+            409,
+            detail={
+                "message": "Esta orden ya fue procesada",
+                "payment_id": dup[0][0],
+                "order_id": dup[0][1],
+                "idempotency_key": idempotency_key,
+            },
+        )
 
     order_id = new_id()
     payment_id = new_id()
 
-    # ── Wallet ──────────────────────────────────────────────────────────────
+    # Sync tax fields on cart DTO for Stripe label
+    cart.tax_amount = tax["tax_amount"]
+    cart.tax_rate_pct = tax["tax_rate_pct"]
+    cart.tax_name = tax["tax_name"]
+    cart.total_with_tax = final_total
+    cart.currency = tax["currency"]
+
     if method == "wallet":
         bal = await get_balance(user_id)
         if bal < final_total:
             raise HTTPException(
                 402,
-                f"Saldo insuficiente. Tienes ${bal:.2f} y el total es ${final_total:.2f}.",
+                f"Saldo insuficiente. Tienes ${bal:.2f} y el total (con impuestos) es ${final_total:.2f}.",
             )
         await create_pending_order(
             user_id, cart, order_id, payment_id, idempotency_key,
-            total=final_total, provider="wallet",
+            total=final_total, provider="wallet", tax_meta=tax,
         )
         try:
             new_bal, _ = await apply_transaction(
@@ -139,48 +213,49 @@ async def checkout(
             order_id, user_id, payment_id, cart.items, provider="wallet"
         )
         await _redeem_if_needed(coupon, user_id, order_id)
-        return CheckoutResponseDTO(
+        return _checkout_payload(
             order_id=order_id,
             payment_id=payment_id,
             status="success",
-            total=final_total,
-            message="Pago con cartera completado. Los juegos están en tu biblioteca.",
-            purchases_count=purchase_count,
-            coupon_code=coupon.code if coupon else None,
+            message=(
+                f"Pago con cartera completado ({tax['tax_name']} {tax['tax_rate_pct']}%). "
+                "Los juegos están en tu biblioteca."
+            ),
+            tax=tax,
+            coupon=coupon,
             coupon_discount=coupon_discount,
             payment_method="wallet",
+            purchases_count=purchase_count,
             wallet_balance=new_bal,
         )
 
-    # ── Stripe ──────────────────────────────────────────────────────────────
     if method == "stripe":
         if not STRIPE_SECRET:
             raise HTTPException(400, "Stripe no está configurado")
         if final_total <= 0:
-            # Gratis con cupón: cumplir sin pasarela
             await create_pending_order(
                 user_id, cart, order_id, payment_id, idempotency_key,
-                total=0.0, provider="coupon",
+                total=0.0, provider="coupon", tax_meta=tax,
             )
             purchase_count = await fulfill_order(
                 order_id, user_id, payment_id, cart.items, provider="coupon"
             )
             await _redeem_if_needed(coupon, user_id, order_id)
-            return CheckoutResponseDTO(
+            return _checkout_payload(
                 order_id=order_id,
                 payment_id=payment_id,
                 status="success",
-                total=0.0,
                 message="Pedido gratuito con cupón. Juegos añadidos a tu biblioteca.",
-                purchases_count=purchase_count,
-                coupon_code=coupon.code if coupon else None,
+                tax={**tax, "taxable_amount": 0.0, "tax_amount": 0.0, "total_with_tax": 0.0},
+                coupon=coupon,
                 coupon_discount=coupon_discount,
                 payment_method="coupon",
+                purchases_count=purchase_count,
             )
 
         await create_pending_order(
             user_id, cart, order_id, payment_id, idempotency_key,
-            total=final_total, provider="stripe",
+            total=final_total, provider="stripe", tax_meta=tax,
         )
         try:
             _, checkout_url = create_stripe_session(
@@ -190,39 +265,40 @@ async def checkout(
             )
         except Exception as exc:
             raise HTTPException(502, f"Error con Stripe: {exc}") from exc
-        return CheckoutResponseDTO(
+        return _checkout_payload(
             order_id=order_id,
             payment_id=payment_id,
             status="pending",
-            total=final_total,
             message="Redirigiendo a pasarela de pago segura...",
-            purchases_count=0,
-            checkout_url=checkout_url,
-            coupon_code=coupon.code if coupon else None,
+            tax=tax,
+            coupon=coupon,
             coupon_discount=coupon_discount,
             payment_method="stripe",
+            checkout_url=checkout_url,
         )
 
-    # ── Sandbox ─────────────────────────────────────────────────────────────
     await create_pending_order(
         user_id, cart, order_id, payment_id, idempotency_key,
-        total=final_total, provider="sandbox",
+        total=final_total, provider="sandbox", tax_meta=tax,
     )
     purchase_count = await fulfill_order(
         order_id, user_id, payment_id, cart.items, provider="sandbox"
     )
     await _redeem_if_needed(coupon, user_id, order_id)
-    return CheckoutResponseDTO(
+    return _checkout_payload(
         order_id=order_id,
         payment_id=payment_id,
         status="success",
-        total=final_total,
-        message="Compra completada. Los juegos aparecerán en tu biblioteca en unos segundos.",
-        purchases_count=purchase_count,
-        checkout_url=None,
-        coupon_code=coupon.code if coupon else None,
+        message=(
+            f"Compra completada ({tax['country_code']} · {tax['tax_name']} "
+            f"{tax['tax_rate_pct']}% = {tax['tax_amount']:.2f} {tax['currency']}). "
+            "Los juegos aparecerán en tu biblioteca en unos segundos."
+        ),
+        tax=tax,
+        coupon=coupon,
         coupon_discount=coupon_discount,
         payment_method="sandbox",
+        purchases_count=purchase_count,
     )
 
 
@@ -247,14 +323,18 @@ async def confirm_stripe_session(
             raise HTTPException(402, "El pago aún no está confirmado")
 
         order_id = meta.get("order_id", "")
+        total = float(session.amount_total or 0) / 100
+        currency = (session.currency or "usd").upper()
         if order_id and await order_already_paid(order_id):
             return CheckoutResponseDTO(
                 order_id=order_id,
                 payment_id=meta.get("payment_id", ""),
                 status="success",
-                total=float(session.amount_total or 0) / 100,
+                total=total,
+                currency=currency,
                 message="Compra ya registrada en tu biblioteca.",
                 purchases_count=0,
+                country_code=meta.get("country_code"),
             )
 
         count = await fulfill_from_stripe_session(session_id)
@@ -262,9 +342,8 @@ async def confirm_stripe_session(
         if coupon_code and order_id:
             try:
                 coupon = await validate_coupon(
-                    coupon_code, float(session.amount_total or 0) / 100 + 0.01, user_id
+                    coupon_code, total + 0.01, user_id
                 )
-                # Si ya se usó, validate falla — ignorar
                 await _redeem_if_needed(coupon, user_id, order_id)
             except Exception:
                 pass
@@ -273,11 +352,14 @@ async def confirm_stripe_session(
             order_id=meta.get("order_id", ""),
             payment_id=meta.get("payment_id", ""),
             status="success",
-            total=float(session.amount_total or 0) / 100,
+            total=total,
+            currency=currency,
             message="¡Pago confirmado! Tus juegos están en la biblioteca.",
             purchases_count=count,
             coupon_code=coupon_code or None,
             payment_method="stripe",
+            country_code=meta.get("country_code"),
+            tax_amount=float(meta.get("tax_amount") or 0),
         )
     except HTTPException:
         raise
@@ -307,6 +389,15 @@ async def stripe_webhook(request: Request):
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         if session.get("payment_status") == "paid":
-            await fulfill_from_stripe_session(session["id"])
+            meta = session.get("metadata") or {}
+            kind = meta.get("kind") or ""
+            if kind == "saas_subscription":
+                from checkout.saas_billing import fulfill_saas_from_stripe_session
+                await fulfill_saas_from_stripe_session(session["id"])
+            elif kind == "featured_placement":
+                from checkout.saas_billing import fulfill_featured_from_stripe_session
+                await fulfill_featured_from_stripe_session(session["id"])
+            else:
+                await fulfill_from_stripe_session(session["id"])
 
     return {"received": True}

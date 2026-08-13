@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { AuthService } from './auth.service';
+import { LocaleService } from './locale.service';
 
 export interface StoreGame {
   id: string;
@@ -21,6 +23,9 @@ export interface StoreGame {
   is_free: boolean;
   background_image: string | null;
   trailer_url?: string | null;
+  currency?: string;
+  pricing_region?: string;
+  country_code?: string | null;
 }
 
 export interface StoreGameDetail extends StoreGame {
@@ -60,7 +65,19 @@ export interface StoreQueryParams {
 @Injectable({ providedIn: 'root' })
 export class StoreService {
   private http = inject(HttpClient);
+  private auth = inject(AuthService);
+  private locale = inject(LocaleService);
   private base = '/store';
+
+  private headers(): HttpHeaders {
+    const t = this.auth.getToken();
+    return t ? new HttpHeaders({ Authorization: `Bearer ${t}` }) : new HttpHeaders();
+  }
+
+  private withCountry(params?: HttpParams): HttpParams {
+    let p = params || new HttpParams();
+    return p.set('country', this.locale.countryCode);
+  }
 
   getStoreGames(params: StoreQueryParams = {}): Observable<StorePage> {
     let p = new HttpParams();
@@ -72,11 +89,17 @@ export class StoreService {
     if (params.search) p = p.set('search', params.search);
     if (params.order_by) p = p.set('order_by', params.order_by);
     if (params.price_filter) p = p.set('price_filter', params.price_filter);
-    return this.http.get<StorePage>(`${this.base}/games`, { params: p });
+    return this.http.get<StorePage>(`${this.base}/games`, {
+      params: this.withCountry(p),
+      headers: this.headers(),
+    });
   }
 
   getGameDetail(slug: string): Observable<StoreGameDetail> {
-    return this.http.get<StoreGameDetail>(`${this.base}/games/${slug}`);
+    return this.http.get<StoreGameDetail>(`${this.base}/games/${slug}`, {
+      params: this.withCountry(),
+      headers: this.headers(),
+    });
   }
 
   getFilters(semana = 17): Observable<StoreFilters> {
@@ -84,19 +107,31 @@ export class StoreService {
   }
 
   getFeatured(semana = 17): Observable<StoreGame[]> {
-    return this.http.get<StoreGame[]>(`${this.base}/featured?semana=${semana}`);
+    return this.http.get<StoreGame[]>(`${this.base}/featured`, {
+      params: this.withCountry(new HttpParams().set('semana', semana)),
+      headers: this.headers(),
+    });
   }
 
   getNewReleases(semana = 17): Observable<StoreGame[]> {
-    return this.http.get<StoreGame[]>(`${this.base}/new-releases?semana=${semana}`);
+    return this.http.get<StoreGame[]>(`${this.base}/new-releases`, {
+      params: this.withCountry(new HttpParams().set('semana', semana)),
+      headers: this.headers(),
+    });
   }
 
   getPopular(semana = 17): Observable<StoreGame[]> {
-    return this.http.get<StoreGame[]>(`${this.base}/popular?semana=${semana}`);
+    return this.http.get<StoreGame[]>(`${this.base}/popular`, {
+      params: this.withCountry(new HttpParams().set('semana', semana)),
+      headers: this.headers(),
+    });
   }
 
   getFreeGames(semana = 17): Observable<StoreGame[]> {
-    return this.http.get<StoreGame[]>(`${this.base}/free-games?semana=${semana}`);
+    return this.http.get<StoreGame[]>(`${this.base}/free-games`, {
+      params: this.withCountry(new HttpParams().set('semana', semana)),
+      headers: this.headers(),
+    });
   }
 
   getGenres(semana = 17): Observable<GenreCount[]> {

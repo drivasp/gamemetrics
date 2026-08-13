@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Header, HTTPException
 
 from auth.cliente_jwt import verify_token
+from auth.roles import get_user_role
 
 
 def esc(s: str) -> str:
@@ -23,6 +24,21 @@ def require_token(authorization: str | None) -> tuple[str, str]:
         raise
     except Exception:
         raise HTTPException(401, "Token inválido o expirado")
+
+
+async def require_roles(
+    authorization: str | None,
+    *allowed: str,
+) -> tuple[str, str, str]:
+    """Auth + rol efectivo desde fact_user_roles (source of truth)."""
+    token, user_id = require_token(authorization)
+    role = await get_user_role(user_id)
+    if allowed and role not in {a.lower() for a in allowed}:
+        raise HTTPException(
+            403,
+            f"Se requiere rol: {', '.join(allowed)}. Tu rol actual: {role}",
+        )
+    return token, user_id, role
 
 
 def optional_user_id(authorization: Annotated[str | None, Header()] = None) -> str | None:

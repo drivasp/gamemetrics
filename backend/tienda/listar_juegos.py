@@ -1,11 +1,13 @@
 import asyncio
+from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
 
 from shared.cliente_pinot import pinot_query, TABLE, GAME_COLUMNS
 from shared.helpers_filas import _int, map_game
-from tienda.calcular_precio import to_store
-from tienda.imagen_juego import resolve_cover
+from shared.request_locale import resolve_request_locale
+from tienda.calcular_precio import to_store_async
+from tienda.imagen_juego import cover_proxy_url
 from tienda.modelos_store import StorePageDTO
 
 router = APIRouter()
@@ -48,7 +50,10 @@ async def store_games(
     search: str = "",
     order_by: str = "rating",
     price_filter: str = "",
+    country: str | None = None,
+    authorization: Annotated[str | None, Header()] = None,
 ):
+    loc = await resolve_request_locale(authorization, country)
     page = max(0, page)
     size = max(1, min(size, 48))
     semana = max(1, min(semana, 17))
@@ -64,7 +69,15 @@ async def store_games(
         pinot_query(f"SELECT COUNT(*) FROM {TABLE} WHERE {where}"),
     )
     mapped = [map_game(r) for r in rows]
-    covers = await asyncio.gather(*[resolve_cover(g.slug, g.name) for g in mapped]) if mapped else []
-    games = [to_store(g, bg) for g, bg in zip(mapped, covers)]
+    games = list(await asyncio.gather(*[
+        to_store_async(
+            g,
+            cover_proxy_url(g.name, g.slug),
+            region=loc["pricing_region"],
+            currency=loc["currency"],
+            fast=True,
+        )
+        for g in mapped
+    ]))
     total = _int(count_rows[0], 0) if count_rows else 0
     return StorePageDTO(games=games, total=total, page=page, size=size)

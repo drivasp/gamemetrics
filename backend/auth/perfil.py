@@ -2,8 +2,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Header, HTTPException
 
-from auth.cliente_jwt import verify_token
+from auth.cliente_jwt import verify_token, create_token
 from auth.modelos_auth import UpdateProfileDTO, UserDTO
+from auth.roles import get_user_role
 from shared.auth_deps import esc, require_token
 from shared.cliente_pinot import pinot_query
 from shared.kafka_producer import kafka_send
@@ -29,6 +30,7 @@ async def _get_user(user_id: str) -> dict | None:
 @router.get("/profile", response_model=UserDTO)
 async def get_profile(authorization: Annotated[str | None, Header()] = None):
     token, user_id = require_token(authorization)
+    role = await get_user_role(user_id)
     user = await _get_user(user_id)
     if not user:
         payload = verify_token(token)
@@ -38,6 +40,7 @@ async def get_profile(authorization: Annotated[str | None, Header()] = None):
             display_name=None,
             bio=None,
             avatar=None,
+            role=role,
         )
     return UserDTO(
         id=user["user_id"],
@@ -45,6 +48,7 @@ async def get_profile(authorization: Annotated[str | None, Header()] = None):
         display_name=user["display_name"] or None,
         bio=user["bio"] or None,
         avatar=user["avatar"] or None,
+        role=role,
     )
 
 
@@ -60,6 +64,7 @@ async def update_profile(
 
     new_display_name = body.display_name if body.display_name is not None else (user["display_name"] or "")
     new_bio = body.bio if body.bio is not None else (user["bio"] or "")
+    role = await get_user_role(user_id)
 
     await kafka_send("fact_users", user_id, {
         "user_id": user["user_id"],
@@ -78,4 +83,5 @@ async def update_profile(
         display_name=new_display_name or None,
         bio=new_bio or None,
         avatar=user["avatar"] or None,
+        role=role,
     )

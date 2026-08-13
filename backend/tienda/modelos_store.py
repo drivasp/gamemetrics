@@ -22,6 +22,9 @@ class StoreGameDTO(BaseModel):
     is_free: bool
     background_image: str | None = None
     trailer_url: str | None = None
+    currency: str = "USD"
+    pricing_region: str = "US"
+    country_code: str | None = None
 
 
 class StoreGameDetailDTO(StoreGameDTO):

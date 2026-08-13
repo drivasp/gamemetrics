@@ -89,4 +89,43 @@ export class SocialService {
   addPartnerGame(product_id: string, game_name: string): Observable<any> {
     return this.http.post('/partners/games', { product_id, game_name }, { headers: this.headers() });
   }
+
+  listPartnerBuilds(productId: string): Observable<{ items: any[] }> {
+    return this.http.get<{ items: any[] }>(`/partners/games/${productId}/builds`, {
+      headers: this.headers(),
+    });
+  }
+
+  uploadPartnerBuild(productId: string, version: string, file: File): Observable<any> {
+    const form = new FormData();
+    form.append('version', version);
+    form.append('file', file);
+    return this.http.post(`/partners/games/${productId}/builds`, form, {
+      headers: this.headers(),
+    });
+  }
+
+  connectOnboard(): Observable<any> {
+    return this.http.post('/partners/connect/onboard', {}, { headers: this.headers() });
+  }
+
+  subscribeSaas(plan_id: string): Observable<any> {
+    return this.http.post('/partners/saas/subscribe', { plan_id, pay_method: 'sandbox' }, { headers: this.headers() });
+  }
+
+  saveBranding(body: { store_name: string; logo_url?: string; accent_color?: string; tagline?: string }): Observable<any> {
+    return this.http.put('/partners/branding', body, { headers: this.headers() });
+  }
+
+  buyFeatured(product_id: string, game_name: string): Observable<any> {
+    return this.http.post(
+      '/partners/featured/buy',
+      { product_id, game_name, pay_method: 'sandbox' },
+      { headers: this.headers() },
+    );
+  }
+
+  heartbeat(status = 'online', detail = ''): Observable<any> {
+    return this.http.post('/friends/presence', { status, detail }, { headers: this.headers() });
+  }
 }

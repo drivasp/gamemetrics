@@ -5,10 +5,12 @@ from fastapi import APIRouter, Header, HTTPException
 
 from carrito.modelos_cart import CartItemDTO, CartDTO, AddCartItemDTO
 from carrito.precio_item import resolve_item_price
-from carrito.servicio import fetch_cart
+from carrito.locale_cart import fetch_user_cart
+from regional.router import get_user_country
 from shared.auth_deps import require_token, esc
 from shared.cliente_pinot import pinot_query
 from shared.kafka_producer import kafka_send
+from shared.region_tax import get_locale
 from tienda.imagen_juego import placeholder_image, resolve_cover
 
 router = APIRouter(prefix="/cart", tags=["cart"])
@@ -40,7 +42,7 @@ async def check_cart(
 @router.get("", response_model=CartDTO)
 async def get_cart(authorization: Annotated[str | None, Header()] = None):
     _, user_id = require_token(authorization)
-    return await fetch_cart(user_id)
+    return await fetch_user_cart(user_id)
 
 
 @router.post("/items", response_model=CartItemDTO, status_code=201)
@@ -60,7 +62,10 @@ async def add_to_cart(
     if existing:
         raise HTTPException(409, "El juego ya está en tu carrito")
 
-    final_price, _, _ = await resolve_item_price(body.product_id, body.game_slug)
+    loc = get_locale(await get_user_country(user_id))
+    final_price, _, _ = await resolve_item_price(
+        body.product_id, body.game_slug, region=loc.pricing_region
+    )
     cover = body.game_image or await resolve_cover(body.game_slug, body.game_name)
     now_ms = int(time.time() * 1000)
     await kafka_send("fact_cart", cid, {

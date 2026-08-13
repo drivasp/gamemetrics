@@ -35,7 +35,7 @@ export class PaymentComponent implements OnInit {
   couponApplied = 0;
   couponMessage = '';
   couponError = '';
-  paymentMethod: 'wallet' | 'sandbox' = 'sandbox';
+  paymentMethod: 'wallet' | 'sandbox' | 'stripe' = 'sandbox';
 
   private cartReady = false;
   private walletReady = false;
@@ -71,16 +71,37 @@ export class PaymentComponent implements OnInit {
     });
   }
 
-  get subtotal(): number {
+  get currency(): string {
+    return this.cart?.currency || 'USD';
+  }
+
+  get merchandise(): number {
     return this.cart?.total ?? 0;
   }
 
+  get taxable(): number {
+    return Math.max(0, Math.round((this.merchandise - this.couponApplied) * 100) / 100);
+  }
+
+  get taxRate(): number {
+    return this.cart?.tax_rate_pct ?? 0;
+  }
+
+  get taxAmount(): number {
+    return Math.round(this.taxable * (this.taxRate / 100) * 100) / 100;
+  }
+
   get finalTotal(): number {
-    return Math.max(0, Math.round((this.subtotal - this.couponApplied) * 100) / 100);
+    return Math.round((this.taxable + this.taxAmount) * 100) / 100;
+  }
+
+  get walletAllowed(): boolean {
+    return this.currency === 'USD';
   }
 
   get walletCanPay(): boolean {
-    return this.finalTotal <= 0 || this.walletBalance + 0.001 >= this.finalTotal;
+    return this.walletAllowed
+      && (this.finalTotal <= 0 || this.walletBalance + 0.001 >= this.finalTotal);
   }
 
   get walletMissing(): number {
@@ -91,6 +112,17 @@ export class PaymentComponent implements OnInit {
     return this.paying || (this.paymentMethod === 'wallet' && !this.walletCanPay);
   }
 
+  money(n: number): string {
+    try {
+      return new Intl.NumberFormat('es-MX', {
+        style: 'currency',
+        currency: this.currency,
+      }).format(n);
+    } catch {
+      return `${this.currency} ${n.toFixed(2)}`;
+    }
+  }
+
   private finishLoad(): void {
     if (!this.cartReady || !this.walletReady) return;
     this.loading = false;
@@ -98,7 +130,6 @@ export class PaymentComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  /** Elige método válido según saldo y total (con cupón). */
   syncPaymentMethod(): void {
     if (this.walletCanPay) {
       this.paymentMethod = 'wallet';
@@ -140,7 +171,7 @@ export class PaymentComponent implements OnInit {
     if (!this.cart || this.payDisabled) return;
     this.paying = true;
     this.error = '';
-    const method = this.paymentMethod === 'wallet' ? 'wallet' : 'sandbox';
+    const method = this.paymentMethod;
     this.events.track('checkout_pay', undefined, { method, total: this.finalTotal });
 
     this.librarySvc.checkout({
@@ -163,10 +194,20 @@ export class PaymentComponent implements OnInit {
       },
       error: err => {
         this.paying = false;
-        this.error = err?.error?.detail || 'No se pudo procesar el pago';
+        const detail = err?.error?.detail;
+        this.error = typeof detail === 'string'
+          ? detail
+          : (detail?.message || 'No se pudo procesar el pago');
         this.cdr.detectChanges();
       },
     });
+  }
+
+  payLabel(): string {
+    if (this.paying) return 'Procesando...';
+    if (this.paymentMethod === 'wallet') return 'Pagar con cartera';
+    if (this.paymentMethod === 'stripe') return 'Pagar con Stripe';
+    return 'Completar compra';
   }
 
   back(): void {

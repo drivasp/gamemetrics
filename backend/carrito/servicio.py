@@ -2,10 +2,13 @@ from carrito.modelos_cart import CartDTO, CartItemDTO
 from carrito.precio_item import resolve_item_price
 from shared.auth_deps import esc
 from shared.cliente_pinot import pinot_query
+from shared.region_tax import compute_tax, get_locale
 from tienda.imagen_juego import placeholder_image
 
 
-async def fetch_cart(user_id: str) -> CartDTO:
+async def fetch_cart(user_id: str, region: str = "US", country_code: str = "US") -> CartDTO:
+    loc = get_locale(country_code)
+    region = region or loc.pricing_region
     rows = await pinot_query(
         f"SELECT cart_item_id, product_id, game_slug, game_name, game_image, "
         f"unit_price, quantity FROM fact_cart "
@@ -18,7 +21,7 @@ async def fetch_cart(user_id: str) -> CartDTO:
 
     for r in rows:
         qty = int(r[6] or 1)
-        final, base, _discount = await resolve_item_price(r[1], r[2])
+        final, base, _discount = await resolve_item_price(r[1], r[2], region=region)
         line = round(final * qty, 2)
         line_base = round(base * qty, 2)
         subtotal += line_base
@@ -38,11 +41,19 @@ async def fetch_cart(user_id: str) -> CartDTO:
 
     subtotal = round(subtotal, 2)
     discount_total = round(discount_total, 2)
-    total = round(sum(i.line_total for i in items), 2)
+    merchandise_total = round(sum(i.line_total for i in items), 2)
+    tax = compute_tax(merchandise_total, country_code)
     return CartDTO(
         items=items,
         subtotal=subtotal,
         discount_total=discount_total,
-        total=total,
+        total=merchandise_total,
         item_count=sum(i.quantity for i in items),
+        currency=loc.currency,
+        country_code=loc.country_code,
+        pricing_region=loc.pricing_region,
+        tax_name=loc.tax_name,
+        tax_rate_pct=loc.tax_rate_pct,
+        tax_amount=tax["tax_amount"],
+        total_with_tax=tax["total_with_tax"],
     )

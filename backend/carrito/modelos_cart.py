@@ -18,6 +18,13 @@ class CartDTO(BaseModel):
     discount_total: float = 0.0
     total: float
     item_count: int
+    currency: str = "USD"
+    country_code: str = "US"
+    pricing_region: str = "US"
+    tax_name: str = "Tax"
+    tax_rate_pct: float = 0.0
+    tax_amount: float = 0.0
+    total_with_tax: float = 0.0
 
 
 class AddCartItemDTO(BaseModel):

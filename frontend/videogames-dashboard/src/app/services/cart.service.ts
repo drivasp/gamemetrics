@@ -20,6 +20,13 @@ export interface Cart {
   discount_total: number;
   total: number;
   item_count: number;
+  currency?: string;
+  country_code?: string;
+  pricing_region?: string;
+  tax_name?: string;
+  tax_rate_pct?: number;
+  tax_amount?: number;
+  total_with_tax?: number;
 }
 
 @Injectable({ providedIn: 'root' })

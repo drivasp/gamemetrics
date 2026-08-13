@@ -2,7 +2,7 @@
 
   <div class="navbar-top">
 
-    <a class="navbar-brand" routerLink="/">
+    <a class="navbar-brand" [routerLink]="brandHome">
 
       <mat-icon class="gm-icon-md brand-icon">sports_esports</mat-icon>
 
@@ -12,13 +12,15 @@
 
 
 
-    <div class="navbar-links" *ngIf="!isStoreArea">
+    <div class="navbar-links" *ngIf="!isStoreArea && isAdmin">
 
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
 
       <a routerLink="/empresa" routerLinkActive="active">Empresa</a>
 
       <a routerLink="/dimensiones" routerLinkActive="active">Dimensiones</a>
+
+      <a routerLink="/reports" routerLinkActive="active">Reportes</a>
 
       <a routerLink="/store" routerLinkActive="active" class="store-link">Tienda</a>
 
@@ -28,7 +30,7 @@
 
     <div class="steam-tabs" *ngIf="isStoreArea">
 
-      <a routerLink="/" class="dashboard-back-link">
+      <a *ngIf="isAdmin" routerLink="/" class="dashboard-back-link">
 
         <mat-icon class="gm-icon-sm">arrow_back</mat-icon>
 
@@ -51,6 +53,41 @@
 
 
     <div class="navbar-auth">
+
+      <div *ngIf="user && isStoreArea" class="region-menu">
+        <button
+          type="button"
+          class="region-trigger locked"
+          (click)="toggleRegion($event)"
+          [attr.aria-expanded]="regionOpen"
+          aria-label="País de residencia"
+          title="País de residencia (fijado al registrarte)">
+          <span class="region-flag">{{ currentFlag }}</span>
+          <span class="region-label">{{ currentCountryName }}</span>
+          <mat-icon class="gm-icon-sm lock-icon">lock</mat-icon>
+        </button>
+
+        <div class="region-dropdown region-locked-panel" *ngIf="regionOpen" (click)="$event.stopPropagation()">
+          <header>
+            <strong>País de residencia</strong>
+            <span>Precios e impuestos fiscales</span>
+          </header>
+          <div class="region-locked-body">
+            <p class="region-current">
+              <span class="region-flag">{{ currentFlag }}</span>
+              <strong>{{ currentCountryName }}</strong>
+            </p>
+            <p class="region-locked-msg">
+              Se definió al crear tu cuenta (como en Steam) y no se puede cambiar
+              desde la tienda para evitar evasión de impuestos.
+            </p>
+            <p class="region-locked-hint" *ngIf="locale">
+              {{ locale.tax_name }} {{ locale.tax_rate_pct }}% · {{ locale.currency }}
+              · catálogo {{ locale.pricing_region }}
+            </p>
+          </div>
+        </div>
+      </div>
 
       <a *ngIf="user && isStoreArea" routerLink="/my-wallet" routerLinkActive="active" class="wallet-link">
 
@@ -173,6 +210,12 @@
           <button class="dropdown-item" (click)="goPartner()">
 
             <mat-icon>business</mat-icon> Publisher
+
+          </button>
+
+          <button *ngIf="isAdmin" class="dropdown-item" (click)="goAdmin()">
+
+            <mat-icon>admin_panel_settings</mat-icon> Admin
 
           </button>
 
