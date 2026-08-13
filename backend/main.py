@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from shared.kafka_producer import start_producer, stop_producer
+from ledger.sqlite_store import init_ledger
 
 from auth.router import router as auth_router
 from tienda.router import router as tienda_router
@@ -36,6 +37,7 @@ from security.middleware import FinancialRateLimitMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    init_ledger()
     await start_producer()
     yield
     await stop_producer()

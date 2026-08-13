@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
+from marketplace.fees_calc import GAME_FEE_PCT, PLATFORM_FEE_PCT, fee_breakdown
 from marketplace.service import (
     cancel_listing,
     create_listing,
@@ -14,9 +15,6 @@ from marketplace.service import (
     mint_item,
     purchase_listing,
     seller_balance_from_market,
-    fee_breakdown,
-    PLATFORM_FEE_PCT,
-    GAME_FEE_PCT,
 )
 from security.rate_limit import rate_limit
 from shared.auth_deps import require_token
@@ -42,11 +40,26 @@ class BuyDTO(BaseModel):
 
 @router.get("/fees")
 async def marketplace_fees():
+    """
+    Preview/calculadora PÚBLICA de fees.
+
+    Decisión de producto (auditoría): permanece público porque:
+    - NO modifica balances
+    - NO crea transacciones / listings / pagos
+    - NO cambia ownership
+    - NO escribe en el ledger durable
+    Solo calcula porcentajes a partir de env + precio de ejemplo.
+    """
     return {
         "platform_fee_pct": PLATFORM_FEE_PCT,
         "game_fee_pct": GAME_FEE_PCT,
         "example_10": fee_breakdown(10),
-        "note": "Fee % = política GameMetrics configurable (env). No es cifra oficial Valve.",
+        "mutates_money": False,
+        "auth_required": False,
+        "note": (
+            "Preview público de comisiones. No ejecuta operaciones financieras. "
+            "Fee % = política GameMetrics configurable (env)."
+        ),
         "payment": "Sandbox wallet — PSP real pendiente de credenciales",
     }
 

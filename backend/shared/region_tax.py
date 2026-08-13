@@ -49,21 +49,43 @@ def get_locale(country_code: str | None) -> CountryLocale:
 
 
 def compute_tax(taxable_amount: float, country_code: str | None) -> dict:
-    loc = get_locale(country_code)
-    taxable = round(max(0.0, float(taxable_amount)), 2)
-    tax_amount = round(taxable * (loc.tax_rate_pct / 100.0), 2)
-    total = round(taxable + tax_amount, 2)
-    return {
-        "country_code": loc.country_code,
-        "country_name": loc.name,
-        "pricing_region": loc.pricing_region,
-        "currency": loc.currency,
-        "tax_name": loc.tax_name,
-        "tax_rate_pct": loc.tax_rate_pct,
-        "taxable_amount": taxable,
-        "tax_amount": tax_amount,
-        "total_with_tax": total,
-    }
+    """
+    Compat API usada por checkout.
+    Delega al Tax Engine configurable (tax/engine.py) cuando está disponible.
+    """
+    try:
+        from tax.engine import calculate_tax
+
+        r = calculate_tax(float(taxable_amount), normalize_country(country_code))
+        return {
+            "country_code": r["country_code"],
+            "country_name": get_locale(r["country_code"]).name if r["country_code"] in COUNTRIES else r["country_code"],
+            "pricing_region": r.get("pricing_region") or get_locale(country_code).pricing_region,
+            "currency": r.get("currency") or get_locale(country_code).currency,
+            "tax_name": r.get("tax_name") or "Tax",
+            "tax_rate_pct": r.get("tax_rate_pct") or 0.0,
+            "taxable_amount": r.get("taxable_amount"),
+            "tax_amount": r.get("tax_amount"),
+            "total_with_tax": r.get("total_with_tax"),
+            "tax_included_in_price": r.get("tax_included_in_price"),
+            "status": r.get("status"),
+        }
+    except Exception:
+        loc = get_locale(country_code)
+        taxable = round(max(0.0, float(taxable_amount)), 2)
+        tax_amount = round(taxable * (loc.tax_rate_pct / 100.0), 2)
+        total = round(taxable + tax_amount, 2)
+        return {
+            "country_code": loc.country_code,
+            "country_name": loc.name,
+            "pricing_region": loc.pricing_region,
+            "currency": loc.currency,
+            "tax_name": loc.tax_name,
+            "tax_rate_pct": loc.tax_rate_pct,
+            "taxable_amount": taxable,
+            "tax_amount": tax_amount,
+            "total_with_tax": total,
+        }
 
 
 def list_countries() -> list[dict]:

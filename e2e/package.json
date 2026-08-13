@@ -10,6 +10,7 @@
     "test:fase0": "playwright test fase0-roles",
     "test:dinero": "playwright test fase-dinero-ledger",
     "test:payout-saas": "playwright test fase-payout-saas",
+    "test:audit": "playwright test audit-cierre",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed"
   },

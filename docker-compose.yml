@@ -154,9 +154,11 @@ services:
       MINIO_SECURE: "false"
       LOCAL_BUILD_DIR: /app/static/builds
       ETL_API_URL: http://etl-api:5000
+      FINANCIAL_LEDGER_PATH: /app/data/financial_ledger.sqlite3
     restart: unless-stopped
     volumes:
       - backend_static:/app/static
+      - backend_ledger:/app/data
     networks:
       gamemetrics:
         ipv4_address: 172.20.0.7
@@ -206,6 +208,7 @@ volumes:
   pinot_server_data:
   kafka_data:
   backend_static:
+  backend_ledger:
   minio_data:
 
 networks:

@@ -17,7 +17,7 @@ Documentación para entrega académica (TA/GA), video demostrativo y evolución 
 | [OPEN_DEPENDENCIES.md](./OPEN_DEPENDENCIES.md) | Decisiones legales/fiscales/proveedor aún abiertas |
 | [INFORME_FINAL_PLATAFORMA.md](./INFORME_FINAL_PLATAFORMA.md) | Informe ejecutivo del análisis + implementación |
 | [FASE_DINERO_LEDGER.md](./FASE_DINERO_LEDGER.md) | Ledger B2B, Direct fee, chargebacks |
-| `../finance/` | Modelo financiero reproducible (JSON/CSV) |
+| [FINANCIAL_LEDGER.md](./FINANCIAL_LEDGER.md) | Ledger durable SQLite vs Kafka vs Pinot |
 
 ---
 

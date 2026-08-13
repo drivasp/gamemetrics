@@ -191,6 +191,43 @@ async def record_sale_ledger(
     _cache_put(entry)
     await kafka_send("fact_partner_ledger", entry_id, entry)
 
+    # Durable SoT (partner account)
+    try:
+        from ledger.sqlite_store import post_entry
+
+        post_entry(
+            entry_type="sale",
+            account_type="partner",
+            account_id=attr.partner_id,
+            amount=net,
+            currency=(currency or "USD").upper(),
+            reference=product_id,
+            related_order=order_id,
+            idempotency_key=f"durable_{entry_id}",
+            metadata={
+                "gross": g,
+                "platform_fee": fee,
+                "publisher_net": net,
+                "product_id": product_id,
+            },
+            allow_negative_balance=True,
+        )
+        if fee:
+            post_entry(
+                entry_type="platform_take",
+                account_type="platform",
+                account_id="gamemetrics",
+                amount=fee,
+                currency=(currency or "USD").upper(),
+                reference=product_id,
+                related_order=order_id,
+                idempotency_key=f"durable_fee_{entry_id}",
+                metadata={"partner_id": attr.partner_id},
+                allow_negative_balance=True,
+            )
+    except Exception as exc:
+        print(f"[ledger] durable sale skip: {exc}")
+
     try:
         from checkout.direct_fee import maybe_recoup_publication_fee
 
@@ -298,6 +335,34 @@ async def record_refund_ledger(
     }
     _cache_put(entry)
     await kafka_send("fact_partner_ledger", entry_id, entry)
+    try:
+        from ledger.sqlite_store import post_entry
+
+        post_entry(
+            entry_type="refund",
+            account_type="partner",
+            account_id=partner_id,
+            amount=net,  # already negative
+            currency=str(cur).upper(),
+            reference=product_id,
+            related_order=order_id,
+            idempotency_key=f"durable_{entry_id}",
+            metadata={"purchase_id": purchase_id, "gross": g, "platform_fee": fee},
+            allow_negative_balance=True,
+        )
+        if fee:
+            post_entry(
+                entry_type="platform_take_refund",
+                account_type="platform",
+                account_id="gamemetrics",
+                amount=fee,  # negative fee reversal
+                currency=str(cur).upper(),
+                related_order=order_id,
+                idempotency_key=f"durable_fee_{entry_id}",
+                allow_negative_balance=True,
+            )
+    except Exception as exc:
+        print(f"[ledger] durable refund skip: {exc}")
     return entry
 
 

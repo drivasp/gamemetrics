@@ -140,7 +140,7 @@ test.describe('Fase 0 · roles', () => {
     await expect(page.getByRole('heading', { name: /Admin GameMetrics/i })).toBeVisible({
       timeout: 20_000,
     });
-    await expect(page.getByText(/Panel admin operativo/i)).toBeVisible();
+    await expect(page.locator('p.sub')).toContainText(/Economía B2B/i);
 
     const player = await registerViaApi(request);
     await page.evaluate(

@@ -370,7 +370,7 @@ async def create_payout(
     _PAYOUTS_BY_PARTNER.setdefault(partner_id, set()).add(payout_id)
     await kafka_send("fact_partner_payouts", payout_id, row)
 
-    # Asiento de control en ledger (auditoría)
+# Payout durable debit when paid
     ledger_id = f"payout_{payout_id}"
     await kafka_send("fact_partner_ledger", ledger_id, {
         "ledger_entry_id": ledger_id,
@@ -392,6 +392,22 @@ async def create_payout(
         "created_at": now,
         "deleted": False,
     })
+    try:
+        from ledger.sqlite_store import post_entry
+
+        post_entry(
+            entry_type="payout",
+            account_type="partner",
+            account_id=partner_id,
+            amount=-amt,
+            reference=row["reference"],
+            related_payment=payout_id,
+            idempotency_key=f"durable_payout_{key or payout_id}",
+            metadata={"method": method, "created_by": created_by},
+            allow_negative_balance=True,
+        )
+    except Exception as exc:
+        print(f"[payout] durable skip: {exc}")
     try:
         from checkout.financial_audit import audit_event
 

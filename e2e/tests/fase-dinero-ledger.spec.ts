@@ -58,13 +58,11 @@ test.describe('Dinero · partner ledger', () => {
     expect(checkout.status === 'paid' || checkout.order_id).toBeTruthy();
     await waitForLibraryItem(request, buyer.token, claimed.product_id);
 
-    const gross = money(Number(claimed.price));
-    const publisherNet = money(gross * 0.7);
-    const platformFee = money(gross - publisherNet);
-
-    // Earnings (cache backend + Pinot)
+    // Earnings: la venta puede tener precio de checkout distinto al featured list price.
     let earningsOk = false;
     let earnings: any = null;
+    let sale: any = null;
+    const publicationFee = 100; // charged on claim approve (PUBLICATION_FEE_USD)
     for (let i = 0; i < 25; i++) {
       const me = await request.get(`${API}/partners/me`, {
         headers: { Authorization: `Bearer ${pub.token}` },
@@ -72,20 +70,28 @@ test.describe('Dinero · partner ledger', () => {
       expect(me.ok(), await me.text()).toBeTruthy();
       const body = await me.json();
       earnings = body.earnings;
-      if (earnings && money(earnings.gross_revenue) >= gross - 0.01) {
+      sale = (body.ledger || []).find(
+        (e: { entry_type: string; product_id: string }) =>
+          e.entry_type === 'sale' && e.product_id === claimed.product_id,
+      );
+      if (sale && Number(sale.gross_amount) > 0) {
         earningsOk = true;
-        expect(money(earnings.publisher_net)).toBeCloseTo(publisherNet, 1);
-        expect(money(earnings.platform_fee)).toBeCloseTo(platformFee, 1);
-        expect(money(earnings.balance_available)).toBeCloseTo(publisherNet, 1);
+        const saleGross = money(Number(sale.gross_amount));
+        const saleNet = money(saleGross * 0.7);
+        const saleFee = money(saleGross - saleNet);
+        expect(money(Number(sale.publisher_net_amount))).toBeCloseTo(saleNet, 1);
+        expect(money(Number(sale.platform_fee_amount))).toBeCloseTo(saleFee, 1);
+        const expectedNet = money(saleNet - publicationFee);
+        expect(money(earnings.publisher_net)).toBeCloseTo(expectedNet, 1);
+        expect(money(earnings.gross_revenue)).toBeCloseTo(saleGross, 1);
         expect((body.ledger || []).length).toBeGreaterThan(0);
-        const sale = (body.ledger || []).find((e: { entry_type: string }) => e.entry_type === 'sale');
-        expect(sale).toBeTruthy();
-        expect(sale.product_id).toBe(claimed.product_id);
         break;
       }
       await new Promise((r) => setTimeout(r, 1000));
     }
-    expect(earningsOk, `earnings no reflejaron la venta: ${JSON.stringify(earnings)}`).toBeTruthy();
+    expect(earningsOk, `earnings no reflejaron la venta: ${JSON.stringify({ earnings, sale })}`).toBeTruthy();
+    const saleGross = money(Number(sale.gross_amount));
+    const saleFee = money(saleGross - money(saleGross * 0.7));
 
     // Admin GMV
     const adminUser = uniqueUser('US');
@@ -107,11 +113,11 @@ test.describe('Dinero · partner ledger', () => {
     expect(gmvRes.ok(), await gmvRes.text()).toBeTruthy();
     const gmv = await gmvRes.json();
     expect(gmv.ok).toBeTruthy();
-    expect(Number(gmv.gmv)).toBeGreaterThanOrEqual(gross - 0.01);
-    expect(Number(gmv.platform_revenue)).toBeGreaterThanOrEqual(platformFee - 0.01);
+    expect(Number(gmv.gmv)).toBeGreaterThanOrEqual(saleGross - 0.01);
+    expect(Number(gmv.platform_revenue)).toBeGreaterThanOrEqual(saleFee - 0.01);
     expect(Array.isArray(gmv.partners)).toBeTruthy();
     const listed = (gmv.partners as Array<{ gross_revenue: number; company_name: string; publisher_share_pct: number; status: string }>)
-      .find((p) => Number(p.gross_revenue) >= gross - 0.01);
+      .find((p) => Number(p.gross_revenue) >= saleGross - 0.01);
     expect(listed, 'partner no aparece en dashboard admin').toBeTruthy();
     expect(listed!.company_name).toBeTruthy();
     expect(listed!.publisher_share_pct).toBe(70);
@@ -140,10 +146,12 @@ test.describe('Dinero · partner ledger', () => {
       const hasRefund = (body.ledger || []).some(
         (e: { entry_type: string }) => e.entry_type === 'refund',
       );
-      if (hasRefund && money(body.earnings?.balance_available ?? 99) <= 0.01) {
+      if (hasRefund) {
         refundedOk = true;
+        // Venta+refund se anulan; queda el direct_fee de publicación (-$100)
         expect(money(body.earnings.gross_revenue)).toBeCloseTo(0, 1);
-        expect(money(body.earnings.publisher_net)).toBeCloseTo(0, 1);
+        expect(money(body.earnings.publisher_net)).toBeCloseTo(-publicationFee, 1);
+        expect(money(body.earnings.balance_available ?? 0)).toBe(0);
         break;
       }
       await new Promise((r) => setTimeout(r, 1000));

@@ -68,6 +68,17 @@ logs/
 *.log
 backend/static/avatars/*
 !backend/static/avatars/.gitkeep
+backend/data/*.sqlite3
+backend/data/*.sqlite3-*
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+!backend/data/.gitkeep
+
+# ── Entrega académica / privados (no versionar) ─────────────
+Tarea de mi compañero.pdf
+*.pdf
+!docs/**/*.pdf
 
 # ── Docker / volúmenes locales ──────────────────────────────
 docker-data/

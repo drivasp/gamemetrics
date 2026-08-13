@@ -9,38 +9,17 @@ from __future__ import annotations
 import os
 import time
 import uuid
-from decimal import Decimal, ROUND_HALF_UP
 from typing import Any
 
 from checkout.financial_audit import audit_event
+from marketplace.fees_calc import GAME_FEE_PCT, PLATFORM_FEE_PCT, _money, fee_breakdown
 from shared.kafka_producer import kafka_send
 from wallet.servicio import apply_transaction, get_balance
-
-PLATFORM_FEE_PCT = float(os.getenv("MARKETPLACE_PLATFORM_FEE_PCT", "5"))
-GAME_FEE_PCT = float(os.getenv("MARKETPLACE_GAME_FEE_PCT", "10"))
 
 _ITEMS: dict[str, dict[str, Any]] = {}  # item_id -> ownership
 _LISTINGS: dict[str, dict[str, Any]] = {}
 _TXS: dict[str, dict[str, Any]] = {}
 _IDEMPOTENCY: dict[str, str] = {}  # key -> tx_id
-
-
-def _money(v: float) -> float:
-    return float(Decimal(str(v)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
-
-
-def fee_breakdown(price: float) -> dict[str, float]:
-    gross = _money(price)
-    platform = _money(gross * PLATFORM_FEE_PCT / 100.0)
-    game = _money(gross * GAME_FEE_PCT / 100.0)
-    seller = _money(gross - platform - game)
-    return {
-        "gross": gross,
-        "platform_fee": platform,
-        "game_fee": game,
-        "seller_net": seller,
-        "total_fee_pct": PLATFORM_FEE_PCT + GAME_FEE_PCT,
-    }
 
 
 async def mint_item(
@@ -151,6 +130,19 @@ async def purchase_listing(
         tx_id = _IDEMPOTENCY[key]
         return _TXS[tx_id]
 
+    # Idempotencia durable: si el débito buyer ya se posteó, no duplicar compra
+    try:
+        from ledger.sqlite_store import get_by_idempotency
+
+        prior = get_by_idempotency(f"mkt_buyer_{listing_id}_{key}")
+        if prior:
+            for tx in _TXS.values():
+                if tx.get("idempotency_key") == key:
+                    _IDEMPOTENCY[key] = tx["tx_id"]
+                    return tx
+    except Exception:
+        pass
+
     listing = _LISTINGS.get(listing_id)
     if not listing or listing.get("deleted"):
         raise ValueError("Listing no encontrado")
@@ -168,13 +160,13 @@ async def purchase_listing(
     if bal + 0.001 < fees["gross"]:
         raise ValueError(f"Saldo insuficiente (${bal:.2f})")
 
-    # Debit buyer
+    # Debit buyer (ledger durable SoT + idempotencia)
     await apply_transaction(
         buyer_user_id,
         -fees["gross"],
         tx_type="purchase",
         reference_id=listing_id,
-        idempotency_key=f"mkt_buyer_{key}",
+        idempotency_key=f"mkt_buyer_{listing_id}_{key}",
     )
     # Credit seller net
     await apply_transaction(
@@ -182,8 +174,39 @@ async def purchase_listing(
         fees["seller_net"],
         tx_type="credit",
         reference_id=listing_id,
-        idempotency_key=f"mkt_seller_{key}",
+        idempotency_key=f"mkt_seller_{listing_id}_{key}",
     )
+    # Platform + game fee en ledger durable (cuenta plataforma)
+    try:
+        from ledger.sqlite_store import post_entry
+
+        if fees["platform_fee"] > 0:
+            post_entry(
+                entry_type="marketplace_platform_fee",
+                account_type="platform",
+                account_id="gamemetrics",
+                amount=fees["platform_fee"],
+                reference=listing_id,
+                related_order=listing_id,
+                idempotency_key=f"mkt_platfee_{listing_id}_{key}",
+                metadata={"listing_id": listing_id, "buyer": buyer_user_id},
+                allow_negative_balance=True,
+            )
+        if fees["game_fee"] > 0:
+            post_entry(
+                entry_type="marketplace_game_fee",
+                account_type="platform",
+                account_id="gamemetrics",
+                amount=fees["game_fee"],
+                reference=listing_id,
+                related_order=listing_id,
+                idempotency_key=f"mkt_gamefee_{listing_id}_{key}",
+                metadata={"listing_id": listing_id, "game_id": listing["game_id"]},
+                allow_negative_balance=True,
+            )
+    except Exception as exc:
+        print(f"[marketplace] durable fee ledger skip: {exc}")
+
 
     now = int(time.time() * 1000)
     tx_id = uuid.uuid4().hex[:16]
