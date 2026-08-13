@@ -116,7 +116,8 @@ export class AuthService {
   }
 
   isAdmin(): boolean {
-    return this.getRole() === 'admin';
+    const r = this.getRole();
+    return r === 'admin' || r === 'super_admin';
   }
 
   isPublisher(): boolean {

@@ -1,27 +1,33 @@
-"""Roles de cuenta: player | publisher | admin (Fase 0)."""
+"""Roles de cuenta — ver auth.permissions para scopes granulares."""
 from __future__ import annotations
 
 import os
 import time
 
+from auth.permissions import DEFAULT_ROLE, ROLES, normalize_role
 from shared.cliente_pinot import pinot_query
 from shared.kafka_producer import kafka_send
 
-ROLES = frozenset({"player", "publisher", "admin"})
-DEFAULT_ROLE = "player"
 ROLE_BOOTSTRAP_SECRET = os.getenv("ROLE_BOOTSTRAP_SECRET", "dev_bootstrap_roles")
+
+# re-export
+__all__ = [
+    "ROLES",
+    "DEFAULT_ROLE",
+    "ROLE_BOOTSTRAP_SECRET",
+    "normalize_role",
+    "get_user_role",
+    "set_user_role",
+    "cache_set_role",
+]
 
 
 def _esc(s: str) -> str:
     return s.replace("'", "''").replace("\\", "\\\\")
 
+
 _ROLE_CACHE: dict[str, tuple[str, float]] = {}
 _CACHE_TTL_S = 300.0
-
-
-def normalize_role(role: str | None) -> str:
-    r = (role or DEFAULT_ROLE).strip().lower()
-    return r if r in ROLES else DEFAULT_ROLE
 
 
 def cache_set_role(user_id: str, role: str) -> None:

@@ -9,7 +9,7 @@ from fastapi.responses import Response
 
 from reports.catalog import get_meta
 from reports.service import build_report, catalog_payload, to_csv
-from shared.auth_deps import require_roles
+from shared.auth_deps import require_permission
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 @router.get("/catalog")
 async def list_reports(authorization: Annotated[str | None, Header()] = None):
     """Catálogo de informes (evita choque con la ruta SPA /reports)."""
-    await require_roles(authorization, "admin")
+    await require_permission(authorization, "reports.read")
     return catalog_payload()
 
 
@@ -29,7 +29,7 @@ async def get_report(
     week: int | None = Query(None, ge=1, le=17),
     authorization: Annotated[str | None, Header()] = None,
 ):
-    await require_roles(authorization, "admin")
+    await require_permission(authorization, "reports.read")
     if not get_meta(code):
         raise HTTPException(404, f"Informe no encontrado: {code}")
     try:
@@ -48,7 +48,7 @@ async def export_report_csv(
     week: int | None = Query(None, ge=1, le=17),
     authorization: Annotated[str | None, Header()] = None,
 ):
-    await require_roles(authorization, "admin")
+    await require_permission(authorization, "reports.export")
     if not get_meta(code):
         raise HTTPException(404, f"Informe no encontrado: {code}")
     try:

@@ -2,10 +2,12 @@ import json
 import math
 import time
 import uuid
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Header, HTTPException, Query
 from fastapi.responses import Response
 
+from shared.auth_deps import require_permission
 from shared.cliente_pinot import pinot_query
 from shared.kafka_producer import kafka_send
 
@@ -40,7 +42,9 @@ async def list_records(
     collection: str,
     page: int = Query(1, ge=1),
     perPage: int = Query(15, ge=1, le=200),
+    authorization: Annotated[str | None, Header()] = None,
 ):
+    await require_permission(authorization, "empresa.read")
     if collection not in VALID_COLLECTIONS:
         raise HTTPException(404, "Colección no encontrada")
 
@@ -69,7 +73,12 @@ async def list_records(
 
 
 @router.post("/{collection}/records", status_code=201)
-async def create_record(collection: str, body: dict):
+async def create_record(
+    collection: str,
+    body: dict,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    await require_permission(authorization, "empresa.write")
     if collection not in VALID_COLLECTIONS:
         raise HTTPException(404, "Colección no encontrada")
 
@@ -88,7 +97,13 @@ async def create_record(collection: str, body: dict):
 
 
 @router.patch("/{collection}/records/{record_id}")
-async def update_record(collection: str, record_id: str, body: dict):
+async def update_record(
+    collection: str,
+    record_id: str,
+    body: dict,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    await require_permission(authorization, "empresa.write")
     if collection not in VALID_COLLECTIONS:
         raise HTTPException(404, "Colección no encontrada")
 
@@ -120,7 +135,12 @@ async def update_record(collection: str, record_id: str, body: dict):
 
 
 @router.delete("/{collection}/records/{record_id}", status_code=204)
-async def delete_record(collection: str, record_id: str):
+async def delete_record(
+    collection: str,
+    record_id: str,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    await require_permission(authorization, "empresa.write")
     if collection not in VALID_COLLECTIONS:
         raise HTTPException(404, "Colección no encontrada")
 

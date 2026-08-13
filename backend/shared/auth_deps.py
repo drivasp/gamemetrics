@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Header, HTTPException
 
 from auth.cliente_jwt import verify_token
+from auth.permissions import permissions_for_role, role_has_permission
 from auth.roles import get_user_role
 
 
@@ -33,10 +34,26 @@ async def require_roles(
     """Auth + rol efectivo desde fact_user_roles (source of truth)."""
     token, user_id = require_token(authorization)
     role = await get_user_role(user_id)
-    if allowed and role not in {a.lower() for a in allowed}:
+    if allowed and role not in {a.lower() for a in allowed} and role != "super_admin":
         raise HTTPException(
             403,
             f"Se requiere rol: {', '.join(allowed)}. Tu rol actual: {role}",
+        )
+    return token, user_id, role
+
+
+async def require_permission(
+    authorization: str | None,
+    permission: str,
+) -> tuple[str, str, str]:
+    """Auth + permiso granular (scopes). Backend enforcement — no solo UI."""
+    token, user_id = require_token(authorization)
+    role = await get_user_role(user_id)
+    if not role_has_permission(role, permission):
+        raise HTTPException(
+            403,
+            f"Permiso denegado: {permission}. Rol={role}. "
+            f"Permisos={permissions_for_role(role)}",
         )
     return token, user_id, role
 

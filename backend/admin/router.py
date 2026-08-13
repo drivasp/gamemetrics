@@ -408,10 +408,11 @@ async def admin_finance_audit(
     limit: int = 50,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    await require_roles(authorization, "admin")
+    from shared.auth_deps import require_permission
     from checkout.financial_audit import list_audit
     from fraud.service import FraudDetectionService
 
+    await require_permission(authorization, "finance.audit")
     return {
         "items": list_audit(limit=min(200, max(1, limit))),
         "fraud_events": FraudDetectionService.list_events(limit=min(100, max(1, limit))),
