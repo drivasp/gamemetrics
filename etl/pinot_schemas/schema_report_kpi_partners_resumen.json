@@ -1,0 +1,27 @@
+{
+  "schemaName": "report_kpi_partners_resumen",
+  "dimensionFieldSpecs": [
+    {"name": "partner_id", "dataType": "STRING"},
+    {"name": "company_name", "dataType": "STRING"},
+    {"name": "status", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "games_count", "dataType": "INT"},
+    {"name": "units_sold", "dataType": "INT"},
+    {"name": "gross_revenue", "dataType": "DOUBLE"},
+    {"name": "platform_fee", "dataType": "DOUBLE"},
+    {"name": "publisher_net", "dataType": "DOUBLE"},
+    {"name": "refund_count", "dataType": "INT"},
+    {"name": "paid_out", "dataType": "DOUBLE"}
+  ],
+  "dateTimeFieldSpecs": [
+    {
+      "name": "updated_at",
+      "dataType": "LONG",
+      "format": "1:MILLISECONDS:EPOCH",
+      "granularity": "1:MILLISECONDS"
+    }
+  ],
+  "primaryKeyColumns": ["partner_id"]
+}

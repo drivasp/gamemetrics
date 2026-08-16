@@ -83,6 +83,11 @@ Tarea de mi compañero.pdf
 # ── Docker / volúmenes locales ──────────────────────────────
 docker-data/
 
+# ── Airflow (metadata, generado en runtime) ─────────────────
+airflow/logs/
+airflow/reports_output/benchmark_*.json
+etl/data/stage/_airflow_tmp/
+
 # ── IDE y sistema operativo ─────────────────────────────────
 .idea/
 .vscode/*

@@ -346,6 +346,54 @@ REPORTS: dict[str, dict[str, Any]] = {
         ],
         "filters": ["week"],
     },
+    "GM-C08": {
+        "code": "GM-C08",
+        "type": "compound",
+        "title": "Ventas diarias (KPI pre-agregado)",
+        "area": "Analytics BI",
+        "question": "¿Cómo evolucionó el GMV día a día en un rango de fechas?",
+        "description": (
+            "Servido desde report_kpi_ventas_diarias, materializada por el DAG horario "
+            "gamemetrics_kpi_reportes (Airflow). A diferencia de GM-C01/C03, no agrega "
+            "en caliente sobre fact_partner_ledger en cada request."
+        ),
+        "source": "report_kpi_ventas_diarias (Pinot, pre-agregada por Airflow)",
+        "columns": [
+            {"key": "fecha", "label": "Fecha", "align": "left"},
+            {"key": "gmv", "label": "GMV (USD)", "align": "right"},
+            {"key": "platform_fee", "label": "Comisión (USD)", "align": "right"},
+            {"key": "publisher_net", "label": "Neto publishers (USD)", "align": "right"},
+            {"key": "orders_count", "label": "Órdenes", "align": "right"},
+            {"key": "units_sold", "label": "Unidades", "align": "right"},
+            {"key": "refund_count", "label": "Reembolsos", "align": "right"},
+        ],
+        "filters": ["date_from", "date_to"],
+    },
+    "GM-C09": {
+        "code": "GM-C09",
+        "type": "compound",
+        "title": "Resumen de estudios (KPI pre-agregado)",
+        "area": "Distribución B2B",
+        "question": "¿Cuál es el estado económico consolidado de cada estudio, sin esperar la agregación en caliente?",
+        "description": (
+            "Equivalente pre-agregado de GM-C03: mismos indicadores (GMV, comisión, "
+            "neto, reembolsos), servidos desde report_kpi_partners_resumen en vez de "
+            "recalcularlos en cada request. Es el gemelo usado para comparar el tiempo "
+            "de respuesta del informe tradicional contra el informe vía Airflow."
+        ),
+        "source": "report_kpi_partners_resumen (Pinot, pre-agregada por Airflow)",
+        "columns": [
+            {"key": "company_name", "label": "Estudio", "align": "left"},
+            {"key": "games_count", "label": "Juegos", "align": "right"},
+            {"key": "units_sold", "label": "Unidades", "align": "right"},
+            {"key": "gross_revenue", "label": "Bruto (USD)", "align": "right"},
+            {"key": "platform_fee", "label": "Comisión (USD)", "align": "right"},
+            {"key": "publisher_net", "label": "Neto (USD)", "align": "right"},
+            {"key": "refund_count", "label": "Reembolsos", "align": "right"},
+            {"key": "paid_out", "label": "Ya liquidado (USD)", "align": "right"},
+        ],
+        "filters": [],
+    },
 }
 
 
@@ -354,6 +402,7 @@ def list_catalog() -> list[dict[str, Any]]:
         "GM-S01", "GM-S02", "GM-S03", "GM-S04", "GM-S05", "GM-S06", "GM-S07",
         "GM-S08", "GM-S09", "GM-S10", "GM-S11", "GM-S12", "GM-S13",
         "GM-C01", "GM-C02", "GM-C03", "GM-C04", "GM-C05", "GM-C06", "GM-C07",
+        "GM-C08", "GM-C09",
     ]
     return [REPORTS[c] for c in order]
 

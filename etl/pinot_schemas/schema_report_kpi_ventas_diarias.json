@@ -1,0 +1,24 @@
+{
+  "schemaName": "report_kpi_ventas_diarias",
+  "dimensionFieldSpecs": [
+    {"name": "fecha", "dataType": "STRING"},
+    {"name": "deleted", "dataType": "BOOLEAN"}
+  ],
+  "metricFieldSpecs": [
+    {"name": "gmv", "dataType": "DOUBLE"},
+    {"name": "platform_fee", "dataType": "DOUBLE"},
+    {"name": "publisher_net", "dataType": "DOUBLE"},
+    {"name": "orders_count", "dataType": "INT"},
+    {"name": "units_sold", "dataType": "INT"},
+    {"name": "refund_count", "dataType": "INT"}
+  ],
+  "dateTimeFieldSpecs": [
+    {
+      "name": "fecha_epoch_ms",
+      "dataType": "LONG",
+      "format": "1:MILLISECONDS:EPOCH",
+      "granularity": "1:DAYS"
+    }
+  ],
+  "primaryKeyColumns": ["fecha"]
+}

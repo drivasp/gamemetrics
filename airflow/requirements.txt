@@ -1,0 +1,15 @@
+# httpx/pandas/pyarrow: SIN pin de versión a propósito -- ya están en el
+# constraints file oficial de Airflow (ver Dockerfile). Pinearlas aquí fue lo
+# primero que se intentó y falló por conflicto de versiones (httpx==0.27.2 vs
+# 0.27.0 requerido, luego pandas==2.2.3 vs 2.1.4 requerido) -- exactamente el
+# tipo de incompatibilidad que pide resolver el enunciado. La versión
+# compatible es "dejar que pip resuelva contra el constraints file".
+httpx
+pandas
+pyarrow
+# kafka-python==2.0.2 (la misma versión que usa etl/) está roto en Python 3.12:
+# kafka.vendor.six.moves no existe en este intérprete -> ModuleNotFoundError.
+# La imagen base de Airflow es python3.12, así que se usa kafka-python-ng, el
+# fork mantenido de la comunidad que expone el mismo paquete "kafka" pero sí
+# soporta 3.12+. Otro caso real de "incompatibilidad -> buscar versión compatible".
+kafka-python-ng==2.2.3

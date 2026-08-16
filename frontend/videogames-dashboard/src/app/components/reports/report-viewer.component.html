@@ -69,6 +69,17 @@
         </label>
       </div>
 
+      <div class="filters" *ngIf="dateRangeFilterCodes.has(code)">
+        <label>
+          Desde
+          <input type="date" [(ngModel)]="dateFrom" (ngModelChange)="reload()" />
+        </label>
+        <label>
+          Hasta
+          <input type="date" [(ngModel)]="dateTo" (ngModelChange)="reload()" />
+        </label>
+      </div>
+
       <div class="actions">
         <button type="button" class="btn ghost" (click)="exportCsv()" [disabled]="csvBusy">
           <mat-icon>download</mat-icon> Exportar CSV

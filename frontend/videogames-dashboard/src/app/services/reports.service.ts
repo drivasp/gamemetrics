@@ -70,34 +70,52 @@ export class ReportsService {
 
   getReport(
     code: string,
-    opts?: { status?: string; partner_id?: string; week?: number | string },
+    opts?: {
+      status?: string;
+      partner_id?: string;
+      week?: number | string;
+      date_from?: string;
+      date_to?: string;
+    },
   ): Observable<ReportPayload> {
-    let params = new HttpParams();
-    if (opts?.status) params = params.set('status', opts.status);
-    if (opts?.partner_id) params = params.set('partner_id', opts.partner_id);
-    if (opts?.week !== undefined && opts?.week !== null && opts?.week !== '') {
-      params = params.set('week', String(opts.week));
-    }
     return this.http.get<ReportPayload>(`${this.base}/view/${code}`, {
       headers: this.headers(),
-      params,
+      params: this.buildParams(opts),
     });
   }
 
   downloadCsv(
     code: string,
-    opts?: { status?: string; partner_id?: string; week?: number | string },
+    opts?: {
+      status?: string;
+      partner_id?: string;
+      week?: number | string;
+      date_from?: string;
+      date_to?: string;
+    },
   ): Observable<Blob> {
+    return this.http.get(`${this.base}/view/${code}/export.csv`, {
+      headers: this.headers(),
+      params: this.buildParams(opts),
+      responseType: 'blob',
+    });
+  }
+
+  private buildParams(opts?: {
+    status?: string;
+    partner_id?: string;
+    week?: number | string;
+    date_from?: string;
+    date_to?: string;
+  }): HttpParams {
     let params = new HttpParams();
     if (opts?.status) params = params.set('status', opts.status);
     if (opts?.partner_id) params = params.set('partner_id', opts.partner_id);
     if (opts?.week !== undefined && opts?.week !== null && opts?.week !== '') {
       params = params.set('week', String(opts.week));
     }
-    return this.http.get(`${this.base}/view/${code}/export.csv`, {
-      headers: this.headers(),
-      params,
-      responseType: 'blob',
-    });
+    if (opts?.date_from) params = params.set('date_from', opts.date_from);
+    if (opts?.date_to) params = params.set('date_to', opts.date_to);
+    return params;
   }
 }

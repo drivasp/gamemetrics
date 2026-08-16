@@ -1,0 +1,120 @@
+# Orquestador Airflow para el pipeline ETL de GameMetrics.
+#
+# Deliberadamente en un compose SEPARADO del docker-compose.yml raíz del
+# proyecto: no toca la infraestructura compartida (Pinot/Kafka/backend), solo
+# se conecta a su red externa para hablar con esos servicios por hostname.
+#
+# Requisito: el stack raíz (../docker-compose.yml) debe estar levantado antes,
+# porque crea la red externa que este compose referencia. Si el nombre de la
+# red no calza (docker compose antepone el nombre del proyecto), verifica con
+# `docker network ls` y ajusta GAMEMETRICS_NETWORK en airflow/.env.
+#
+# Uso:
+#   cd airflow
+#   cp .env.example .env
+#   docker compose up -d airflow-init   # una sola vez: crea usuario admin
+#   docker compose up -d
+#   → UI en http://localhost:8081  (usuario/clave: admin / admin)
+
+x-airflow-common: &airflow-common
+  build: .
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DEFAULT_TIMEZONE: America/Guayaquil
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:-gamemetrics_dev_secret_change_me}
+    PINOT_CONTROLLER_URL: http://pinot-controller:9000
+    PINOT_BROKER_URL: http://pinot-broker:8099
+    KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ETL_SRC_DIR: /opt/airflow/etl_src
+    PINOT_SCHEMAS_DIR: /opt/airflow/etl_src/pinot_schemas
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./reports_output:/opt/airflow/reports_output
+    - ../etl:/opt/airflow/etl_src
+  depends_on:
+    airflow-postgres:
+      condition: service_healthy
+
+services:
+  airflow-postgres:
+    image: postgres:16-alpine
+    container_name: airflow-postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - airflow_internal
+
+  # IPs estáticas .20/.21/.22 en la red gamemetrics -- el compose raíz ya
+  # reserva .2 a .10 (zookeeper..minio) con ipv4_address fijas; sin esto,
+  # Docker le asigna a estos contenedores las primeras libres (.2, .6...),
+  # que chocan con zookeeper/kafka y les impide arrancar tras un restart
+  # ("Address already in use" / NodeExistsException en cascada).
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create \
+          --username admin --password admin \
+          --firstname GameMetrics --lastname Admin \
+          --role Admin --email admin@gamemetrics.demo || true
+    networks:
+      airflow_internal:
+      gamemetrics:
+        ipv4_address: 172.20.0.20
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    command: webserver
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      airflow_internal:
+      gamemetrics:
+        ipv4_address: 172.20.0.21
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    command: scheduler
+    restart: unless-stopped
+    networks:
+      airflow_internal:
+      gamemetrics:
+        ipv4_address: 172.20.0.22
+
+volumes:
+  airflow_postgres_data:
+
+networks:
+  # Red interna solo para que Airflow hable con su propio Postgres de metadata.
+  airflow_internal:
+    driver: bridge
+  # Red del stack principal de GameMetrics (creada por ../docker-compose.yml).
+  gamemetrics:
+    external: true
+    name: ${GAMEMETRICS_NETWORK:-gamemetrics_gamemetrics}

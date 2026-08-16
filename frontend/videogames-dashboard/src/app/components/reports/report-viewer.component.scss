@@ -132,13 +132,15 @@
   color: #5c6b78;
 }
 
-.filters select {
+.filters select,
+.filters input[type="date"] {
   min-width: 220px;
   padding: 0.4rem 0.55rem;
   border: 1px solid #8f98a0;
   background: #fff;
   color: #1b2838;
   font-size: 0.85rem;
+  font-family: inherit;
 }
 
 .actions {

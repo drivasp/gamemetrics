@@ -27,13 +27,18 @@ async def get_report(
     status: str | None = Query(None),
     partner_id: str | None = Query(None),
     week: int | None = Query(None, ge=1, le=17),
+    date_from: str | None = Query(None),
+    date_to: str | None = Query(None),
     authorization: Annotated[str | None, Header()] = None,
 ):
     await require_permission(authorization, "reports.read")
     if not get_meta(code):
         raise HTTPException(404, f"Informe no encontrado: {code}")
     try:
-        return await build_report(code, status=status, partner_id=partner_id, week=week)
+        return await build_report(
+            code, status=status, partner_id=partner_id, week=week,
+            date_from=date_from, date_to=date_to,
+        )
     except KeyError:
         raise HTTPException(404, f"Informe no encontrado: {code}")
     except Exception as e:
@@ -46,13 +51,18 @@ async def export_report_csv(
     status: str | None = Query(None),
     partner_id: str | None = Query(None),
     week: int | None = Query(None, ge=1, le=17),
+    date_from: str | None = Query(None),
+    date_to: str | None = Query(None),
     authorization: Annotated[str | None, Header()] = None,
 ):
     await require_permission(authorization, "reports.export")
     if not get_meta(code):
         raise HTTPException(404, f"Informe no encontrado: {code}")
     try:
-        payload = await build_report(code, status=status, partner_id=partner_id, week=week)
+        payload = await build_report(
+            code, status=status, partner_id=partner_id, week=week,
+            date_from=date_from, date_to=date_to,
+        )
     except Exception as e:
         raise HTTPException(502, f"No se pudo generar el CSV: {e}")
     body = to_csv(payload)

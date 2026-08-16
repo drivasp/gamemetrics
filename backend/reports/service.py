@@ -625,12 +625,85 @@ async def build_c07(week: int | None = 1) -> dict[str, Any]:
     return _envelope(meta, rows=rows, applied_filters={"week": str(w)})
 
 
+async def build_c08(date_from: str | None = None, date_to: str | None = None) -> dict[str, Any]:
+    meta = get_meta("GM-C08")
+    assert meta
+    conditions = ["deleted = false"]
+    if date_from:
+        conditions.append(f"fecha >= '{esc(date_from)}'")
+    if date_to:
+        conditions.append(f"fecha <= '{esc(date_to)}'")
+    where = " AND ".join(conditions)
+    try:
+        raw = await pinot_query(
+            "SELECT fecha, gmv, platform_fee, publisher_net, orders_count, units_sold, refund_count "
+            f"FROM report_kpi_ventas_diarias WHERE {where} ORDER BY fecha ASC LIMIT 400"
+        )
+    except Exception:
+        raw = []
+    rows = [
+        {
+            "fecha": r[0],
+            "gmv": float(r[1] or 0),
+            "platform_fee": float(r[2] or 0),
+            "publisher_net": float(r[3] or 0),
+            "orders_count": int(r[4] or 0),
+            "units_sold": int(r[5] or 0),
+            "refund_count": int(r[6] or 0),
+        }
+        for r in (raw or [])
+    ]
+    kpis = [
+        {"key": "days", "label": "Días en rango", "value": len(rows), "format": "number"},
+        {"key": "gmv_total", "label": "GMV del rango", "value": sum(r["gmv"] for r in rows), "format": "currency"},
+        {"key": "orders_total", "label": "Órdenes del rango", "value": sum(r["orders_count"] for r in rows), "format": "number"},
+    ]
+    return _envelope(
+        meta, rows=rows, kpis=kpis,
+        applied_filters={"date_from": date_from or "", "date_to": date_to or ""},
+    )
+
+
+async def build_c09() -> dict[str, Any]:
+    meta = get_meta("GM-C09")
+    assert meta
+    try:
+        raw = await pinot_query(
+            "SELECT company_name, games_count, units_sold, gross_revenue, platform_fee, "
+            "publisher_net, refund_count, paid_out "
+            "FROM report_kpi_partners_resumen WHERE deleted = false ORDER BY gross_revenue DESC LIMIT 200"
+        )
+    except Exception:
+        raw = []
+    rows = [
+        {
+            "company_name": r[0] or "—",
+            "games_count": int(r[1] or 0),
+            "units_sold": int(r[2] or 0),
+            "gross_revenue": float(r[3] or 0),
+            "platform_fee": float(r[4] or 0),
+            "publisher_net": float(r[5] or 0),
+            "refund_count": int(r[6] or 0),
+            "paid_out": float(r[7] or 0),
+        }
+        for r in (raw or [])
+    ]
+    kpis = [
+        {"key": "partners_count", "label": "Estudios", "value": len(rows), "format": "number"},
+        {"key": "gross_total", "label": "Bruto total", "value": sum(r["gross_revenue"] for r in rows), "format": "currency"},
+        {"key": "net_total", "label": "Neto total", "value": sum(r["publisher_net"] for r in rows), "format": "currency"},
+    ]
+    return _envelope(meta, rows=rows, kpis=kpis)
+
+
 async def build_report(
     code: str,
     *,
     status: str | None = None,
     partner_id: str | None = None,
     week: int | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
 ) -> dict[str, Any]:
     c = (code or "").upper()
     builders = {
@@ -654,6 +727,8 @@ async def build_report(
         "GM-C05": lambda: build_c05(week),
         "GM-C06": lambda: build_c06(week),
         "GM-C07": lambda: build_c07(week),
+        "GM-C08": lambda: build_c08(date_from, date_to),
+        "GM-C09": build_c09,
     }
     fn = builders.get(c)
     if not fn:

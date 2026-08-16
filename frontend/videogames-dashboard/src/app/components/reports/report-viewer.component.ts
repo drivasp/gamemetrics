@@ -25,10 +25,13 @@ export class ReportViewerComponent implements OnInit {
   statusFilter = '';
   partnerId = '';
   week = 1;
+  dateFrom = '';
+  dateTo = '';
   csvBusy = false;
 
   readonly partnerFilterCodes = new Set(['GM-C02', 'GM-S12', 'GM-S13']);
   readonly weekFilterCodes = new Set(['GM-C04', 'GM-C05', 'GM-C06', 'GM-C07']);
+  readonly dateRangeFilterCodes = new Set(['GM-C08']);
   readonly weeks = Array.from({ length: 17 }, (_, i) => i + 1);
 
   ngOnInit(): void {
@@ -37,18 +40,24 @@ export class ReportViewerComponent implements OnInit {
       this.statusFilter = this.code === 'GM-S03' ? 'open' : this.code === 'GM-S01' ? 'pending' : '';
       this.partnerId = '';
       this.week = 1;
+      this.dateFrom = '';
+      this.dateTo = '';
       this.reload();
     });
   }
 
-  private buildOpts(): { status?: string; partner_id?: string; week?: number } {
-    const opts: { status?: string; partner_id?: string; week?: number } = {};
+  private buildOpts(): { status?: string; partner_id?: string; week?: number; date_from?: string; date_to?: string } {
+    const opts: { status?: string; partner_id?: string; week?: number; date_from?: string; date_to?: string } = {};
     if (this.code === 'GM-S01') opts.status = this.statusFilter || 'pending';
     if (this.code === 'GM-S03') opts.status = this.statusFilter || 'open';
     if (this.partnerFilterCodes.has(this.code) && this.partnerId) {
       opts.partner_id = this.partnerId;
     }
     if (this.weekFilterCodes.has(this.code)) opts.week = this.week || 1;
+    if (this.dateRangeFilterCodes.has(this.code)) {
+      if (this.dateFrom) opts.date_from = this.dateFrom;
+      if (this.dateTo) opts.date_to = this.dateTo;
+    }
     return opts;
   }
 
@@ -76,6 +85,12 @@ export class ReportViewerComponent implements OnInit {
       }
       if (res.filters?.['week'] !== undefined) {
         this.week = Number(res.filters['week']) || 1;
+      }
+      if (res.filters?.['date_from'] !== undefined) {
+        this.dateFrom = String(res.filters['date_from'] || '');
+      }
+      if (res.filters?.['date_to'] !== undefined) {
+        this.dateTo = String(res.filters['date_to'] || '');
       }
       this.loading = false;
       this.cdr.detectChanges();
